@@ -7,14 +7,14 @@ const ITEMS: { key: keyof Omit<Health, 'sentence'>; label: string; value: (hh: H
   { key: 'sequencer', label: 'Sequencer', value: (x) => x.sequencer.state === 'live' ? 'Producing <em>blocks</em>' : x.sequencer.state === 'pending' ? 'Blocks <em>slowing</em>' : x.sequencer.state === 'failure' ? 'No blocks <em>seen</em>' : 'Waiting' },
   { key: 'batches', label: 'Batches', value: (x) => x.batches.state === 'live' ? 'Posting <em>on time</em>' : x.batches.state === 'pending' ? 'Batch <em>overdue</em>' : x.batches.state === 'failure' ? 'Batches <em>stalled</em>' : 'Waiting' },
   { key: 'data', label: 'Data availability', value: (x) => x.data.mode === 'anytrust' ? 'AnyTrust <em>certificate</em>' : x.data.mode === 'fulldata' ? 'Full data <em>fallback</em>' : x.data.mode === 'blob' ? 'Blob <em>data</em>' : 'Waiting' },
-  { key: 'assertions', label: 'Assertions', value: (x) => x.assertions.state === 'live' ? 'Confirming <em>on time</em>' : x.assertions.state === 'pending' ? 'Confirmation <em>overdue</em>' : x.assertions.state === 'failure' ? 'Confirmations <em>stalled</em>' : 'Waiting' },
+  { key: 'assertions', label: 'Assertions', value: (x) => x.assertions.state === 'live' ? 'Inside the <em>window</em>' : x.assertions.state === 'pending' ? 'Confirmation <em>overdue</em>' : x.assertions.state === 'failure' ? 'Confirmations <em>stalled</em>' : 'Waiting' },
 ]
 
 const RULE: Record<string, string> = {
   sequencer: '<b>Live</b> while the newest Elysium block is under 4 s old.<br>Pending under 20 s. Failure beyond.',
   batches: '<b>Live</b> while the last batch is younger than twice the usual gap.<br>Pending under four times.',
   data: 'Reads the first byte of each batch payload.<br><b>0x88</b> is an AnyTrust certificate. Full data means the committee fell back.',
-  assertions: '<b>Live</b> while the last confirmation is younger than twice the usual creation gap, floored at one hour.',
+  assertions: 'A claim confirms only after the challenge window, read from the rollup contract. <b>Live</b> while no open claim is older than the window plus 25%. Many open claims is normal when the window is long.',
 }
 export class HealthStrip {
   els = new Map<string, { root: HTMLElement; v: HTMLElement; d: HTMLElement; state: HealthState | 'unknown' }>()

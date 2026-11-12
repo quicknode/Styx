@@ -121,7 +121,7 @@ export class Lanes {
     if (when - now > 600) when = now // never fall far behind reality
     this.lastTickAt = when
     const t = h('div', { class: 'tick' }); t.dataset.n = String(hd.number); t.dataset.t = String(hd.timestamp); const x = (when - this.elyT0) * this.ELY_SPEED + (this.TRACK_R - this.TRACK_L)
-    t.dataset.x = String(x); t.style.transform = `translate3d(${x}px,-50%,0)`
+    t.dataset.x = String(x); t.style.transform = `translate3d(${x}px,0,0)`
     this.elyGroup.append(t)
     gsap.fromTo(t, { scaleY: 2.4, opacity: 0 }, { scaleY: 1, opacity: 1, duration: .35, ease: 'power2.out' })
     this.updateWaiting()
@@ -132,7 +132,7 @@ export class Lanes {
     if (ts) { this.l1Times.push(ts); if (this.l1Times.length > 30) this.l1Times.shift() }
     if (this.l1Times.length > 5) { const iv = (this.l1Times.at(-1)! - this.l1Times[0]) / (this.l1Times.length - 1); this.l1Title.textContent = `HyperEVM · settlement · every ${iv.toFixed(1)} s` }
     const b = h('div', { class: 'blk hl' }); b.dataset.n = String(n); if (ts) b.dataset.t = String(ts); const x = this.l1NowX()
-    b.dataset.x = String(x); b.style.transform = `translate3d(${x}px,-50%,0)`
+    b.dataset.x = String(x); b.style.transform = `translate3d(${x}px,0,0)`
     this.l1Group.append(b)
     gsap.fromTo(b, { scale: 1.8, opacity: 0 }, { scale: 1, opacity: 1, duration: .5, ease: 'back.out(2.5)' })
   }

@@ -57,7 +57,7 @@ export function assertionsTab() {
     const med = lags.length ? [...lags].sort((p, q) => p - q)[Math.floor(lags.length / 2)] : 0
     facts.set([
       { k: 'last confirmed', v: conf ? `${fmtAge(now - conf.confirmedTime!)} <em>ago</em>` : '—', s: conf ? fmtClock(conf.confirmedTime!) : '' },
-      { k: 'open claims', v: `${open.length}`, s: open[0]?.createdTime ? `oldest created ${fmtAge(now - open[0].createdTime)} ago` : 'none waiting', cls: open.length > 3 ? 'amber' : '' },
+      { k: 'open claims', v: `${open.length}`, s: open[0]?.createdTime ? `oldest ${fmtAge(now - open[0].createdTime)} into a ${s.health.assertions.confirmPeriod >= 3600 ? Math.round(s.health.assertions.confirmPeriod / 3600) + ' h' : s.health.assertions.confirmPeriod + ' s'} window` : 'none waiting', cls: s.health.assertions.state === 'live' ? '' : 'amber' },
       { k: 'typical confirmation lag', v: med ? fmtAge(med) : '—', s: 'created to confirmed, last 24 h' },
       { k: 'what this means', v: 'Withdrawals <em>wait</em>', s: 'for the claim covering them to confirm' },
     ])

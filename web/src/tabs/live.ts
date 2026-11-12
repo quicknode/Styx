@@ -31,7 +31,7 @@ export function liveTab(openTab: (id: string) => void) {
       { k: 'block time', v: `${Math.round(s.elysium.blockInterval)} <em>ms</em>`, s: `block ${s.elysium.head?.number.toLocaleString('en-US') ?? '—'}` },
       { k: 'last batch', v: last ? `${fmtAgeShort(now - last.l1Time)} <em>ago</em>` : '—', s: last ? `#${last.seq} · every ${fmtAge(s.health.batches.medianInterval)}` : '', cls: 'hl' },
       { k: 'batching lag', v: s.elysium.unbatchedSeconds ? `${fmtAgeShort(s.elysium.unbatchedSeconds)} <em>behind</em>` : 'caught <em>up</em>', s: s.elysium.unbatchedBlocks ? `${s.elysium.unbatchedBlocks.toLocaleString('en-US')} blocks waiting` : '', cls: s.elysium.unbatchedSeconds > 900 ? 'amber' : '' },
-      { k: 'last assertion', v: conf ? `${fmtAgeShort(now - conf.confirmedTime!)} <em>ago</em>` : 'none <em>yet</em>', s: `${s.health.assertions.openCount} open claim${s.health.assertions.openCount === 1 ? '' : 's'}` },
+      { k: 'last assertion', v: conf ? `${fmtAgeShort(now - conf.confirmedTime!)} <em>ago</em>` : 'none <em>yet</em>', s: `${s.health.assertions.openCount} open · ${s.health.assertions.confirmPeriod >= 3600 ? Math.round(s.health.assertions.confirmPeriod / 3600) + ' h' : s.health.assertions.confirmPeriod + ' s'} window` },
     ])
   }
   state.onSnapshot.on((s) => {

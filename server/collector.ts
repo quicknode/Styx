@@ -2,7 +2,7 @@ import { EventEmitter } from 'node:events'
 import WebSocket from 'ws'
 import { Rpc, RpcError, hexToNum, word, type Log } from './rpc.js'
 import { TOPICS, type NetworkConfig } from './networks.js'
-import type { Assertion, Batch, BridgeMsg, DaMode, Event, Head, Health, Snapshot, Withdrawal } from './types.js'
+import type { Assertion, Batch, BridgeMsg, DaMode, Event, Head, Health, HealthState, Snapshot, Withdrawal } from './types.js'
 
 const KIND_LABEL: Record<number, string> = {
   3: 'L2 message', 7: 'Batch posting report', 9: 'Retryable ticket', 11: 'Initialization', 12: 'HYPE deposit', 13: 'Rollup event',
@@ -61,7 +61,10 @@ export class Collector extends EventEmitter {
 
   emitEvent(e: Event) { this.emit('event', e) }
 
+  /** Rollup confirmPeriodBlocks, in parent-chain blocks (HyperEVM ≈ 1 s each). */
+  confirmPeriodBlocks = 0
   async start() {
+    try { const r = await this.l1.call<string>('eth_call', [{ to: this.net.contracts.rollup, data: '0x2e7acfa6' }, 'latest']); this.confirmPeriodBlocks = Number(BigInt(r)); console.log(`[collector] ${this.net.name}: confirmPeriodBlocks = ${this.confirmPeriodBlocks}`) } catch (e) { console.warn('[collector] confirmPeriodBlocks', (e as Error).message) }
     this.l1Head = await this.l1.blockNumber()
     const from = Math.max(1, this.l1Head - this.backfillBlocks)
     console.log(`[collector] ${this.net.name}: backfilling HyperEVM ${from}..${this.l1Head}`)
@@ -323,17 +326,25 @@ export class Collector extends EventEmitter {
     const confirmed = as.filter((a) => a.confirmedTime).sort((a, b) => a.confirmedTime! - b.confirmedTime!)
     const lastConf = confirmed.at(-1)
     const lastConfirmedAge = lastConf ? now - lastConf.confirmedTime! : 1e9
-    const created = as.filter((a) => a.createdTime).sort((a, b) => a.createdTime! - b.createdTime!)
-    const cgaps = created.slice(-10).map((a, i, arr) => (i ? a.createdTime! - arr[i - 1].createdTime! : 0)).filter(Boolean)
-    const cmed = Math.max(3600, cgaps.length >= 1 ? median(cgaps) : 3600)
-    const open = as.filter((a) => a.createdTime && !a.confirmedTime).length
-    const aState = !confirmed.length && !created.length ? 'unknown' : lastConfirmedAge < cmed * 2 ? 'live' : lastConfirmedAge < cmed * 4 ? 'pending' : 'failure'
+    const openList = as.filter((a) => a.createdTime && !a.confirmedTime).sort((a, b) => a.createdTime! - b.createdTime!)
+    const open = openList.length
+    // A claim can only confirm after the challenge window (confirmPeriodBlocks parent blocks, ~1 s each on HyperEVM).
+    // "On time" means no open claim is older than the window plus a grace period. Many open claims is normal when the window is long.
+    const period = this.confirmPeriodBlocks > 0 ? this.confirmPeriodBlocks : this.net.name === 'testnet' ? 10 : 86400
+    const grace = Math.max(1800, period * 0.25)
+    const oldestOpenAge = openList.length ? now - openList[0].createdTime! : 0
+    const aState: HealthState = !as.length ? 'unknown' : oldestOpenAge <= period + grace ? 'live' : oldestOpenAge <= period + 2 * grace ? 'pending' : 'failure'
+    const nextDue = openList.length ? Math.max(0, period - oldestOpenAge) : 0
+    const periodLabel = period >= 3600 ? `${Math.round(period / 3600)} h window` : `${period} s window`
+    const aDetail = aState === 'live'
+      ? `${periodLabel} · ${open} open${openList.length ? ` · next due ${nextDue > 60 ? 'in ' + fmtAge(nextDue) : 'now'}` : ''}`
+      : `${periodLabel} · oldest open ${fmtAge(oldestOpenAge)} · ${open} open`
 
     const lh = this.lastHour(); const hour = lh.hype + lh.retryable + lh.other; const whour = lh.withdrawals
     const sentence = [
       head ? `Elysium is producing a block every ${Math.round(interval)} ms.` : 'Waiting for Elysium blocks.',
       last ? `The last batch landed on HyperEVM ${fmtAge(lastBatchAge)} ago${mode === 'anytrust' ? ' carrying an AnyTrust certificate' : mode === 'fulldata' ? ' with full data, the committee fallback' : ''}${this.unbatchedSeconds() > 300 ? `, and batching is running ${fmtAge(this.unbatchedSeconds())} behind the chain head` : ''}.` : '',
-      lastConf ? `The last assertion was confirmed ${fmtAge(lastConfirmedAge)} ago.` : '',
+      openList.length ? `${open} state claim${open === 1 ? '' : 's'} inside the ${periodLabel.replace(' window', '')} challenge window.` : '',
       hour || whour ? `${hour.toLocaleString('en-US')} deposits in, ${whour} withdrawals out, this hour.` : '',
 
     ].filter(Boolean).join(' ')
@@ -342,7 +353,7 @@ export class Collector extends EventEmitter {
       sequencer: { state: seqState, headAge, blockInterval: interval, detail: head ? `block ${head.number.toLocaleString('en-US')} · ${Math.round(interval)} ms` : 'no heads' },
       batches: { state: batchState, lastBatchAge, medianInterval: med, detail: last ? `#${last.seq} · ${fmtAge(lastBatchAge)} ago · every ${fmtAge(med)}` : 'none yet' },
       data: { state: dataState, mode, detail: dataDetail },
-      assertions: { state: aState, lastConfirmedAge, openCount: open, detail: lastConf ? `confirmed ${fmtAge(lastConfirmedAge)} ago · ${open} open` : `${open} open` },
+      assertions: { state: aState, lastConfirmedAge, openCount: open, confirmPeriod: period, detail: aDetail },
       sentence,
     }
   }

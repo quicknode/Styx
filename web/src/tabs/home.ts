@@ -13,11 +13,11 @@ export function homeTab(openTab: (id: string) => void, lookup: (hash: string) =>
   const sample = h('button', { class: 'home-go', type: 'button' }, [h('span', {}, 'Try the newest batched tx'), h('span', { class: 'arrow', 'aria-hidden': 'true' }, '→')]); at(sample, G.x(10), 88, G.w(3)); el.append(sample)
   const hint = at(h('div', { class: 'home-hint' }, 'You will see where it is: included on Elysium, batched to HyperEVM, confirmed, or asserted.'), G.x(1), 176, G.w(9)); el.append(hint)
 
-  const strip = at(h('div', { class: 'home-health' }), G.x(1), 300, G.w(12)); el.append(strip)
+  const strip = at(h('div', { class: 'home-health' }), G.x(1), 336, G.w(12)); el.append(strip)
   const health = new HealthStrip(strip, (k) => openTab(k === 'sequencer' ? 'live' : k === 'data' ? 'batches' : k))
 
-  const title = at(h('h2', { class: 'h2 home-title', html: 'Is Elysium <em>settling</em> right now?' }), G.x(1), 600); el.append(title)
-  const sentence = at(h('p', { class: 'home-sentence', 'aria-live': 'polite' }, 'Connecting…'), G.x(1), 680, G.w(9)); el.append(sentence)
+  const title = at(h('h2', { class: 'h2 home-title', html: 'Is Elysium <em>settling</em> right now?' }), G.x(1), 622); el.append(title)
+  const sentence = at(h('p', { class: 'home-sentence', 'aria-live': 'polite' }, 'Connecting…'), G.x(1), 702, G.w(9)); el.append(sentence)
 
   const go = (hash: string) => { hash = hash.trim(); if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) { hint.textContent = 'That is not a transaction hash. It starts with 0x and has 64 hex characters.'; return } openTab('track'); setTimeout(() => lookup(hash), 300) }
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(input.value) })
@@ -33,7 +33,7 @@ export function homeTab(openTab: (id: string) => void, lookup: (hash: string) =>
       `Blocks every <b class="n">${Math.round(s.elysium.blockInterval / 10) * 10} ms</b>.`,
       last ? `Last batch landed <b class="n">${coarse(now - last.l1Time)}</b> ago${s.elysium.unbatchedSeconds > 300 ? `, batching <b class="n">${coarse(s.elysium.unbatchedSeconds)}</b> behind head` : ''}.` : '',
       hh.data.mode === 'anytrust' ? 'Data is posted as <b>AnyTrust certificates</b>.' : hh.data.mode === 'fulldata' ? 'Data is being posted <b>in full</b>, the committee fallback.' : '',
-      hh.assertions.openCount ? `<b class="n">${hh.assertions.openCount}</b> state claim${hh.assertions.openCount === 1 ? '' : 's'} waiting to confirm.` : 'No state claims waiting.',
+      hh.assertions.openCount ? `<b class="n">${hh.assertions.openCount}</b> state claim${hh.assertions.openCount === 1 ? '' : 's'} inside the <b class="n">${hh.assertions.confirmPeriod >= 3600 ? Math.round(hh.assertions.confirmPeriod / 3600) + ' h' : hh.assertions.confirmPeriod + ' s'}</b> challenge window.` : 'No state claims waiting.',
     ].filter(Boolean).join(' ')
     const shape = parts.replace(/\d[\d,.]*/g, '#')
     if (shape !== lastShape) { lastShape = shape; sentence.innerHTML = parts; gsap.fromTo(sentence, { opacity: .4 }, { opacity: 1, duration: .5 }) } else sentence.innerHTML = parts

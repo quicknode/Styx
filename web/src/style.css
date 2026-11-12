@@ -31,17 +31,17 @@ html, body { height: 100%; background: #0e0e0d; color: var(--ink); font-family: 
 #lockup img { display: block; } #lockup .lk-ely { height: 24px; } #lockup .lk-qn { height: 19px; } #lockup .lk-x { width: 1px; height: 22px; background: var(--rule-strong); }
 
 /* health strip */
-.home-health { position: absolute; display: grid; grid-template-columns: repeat(4, 1fr); gap: 48px; height: 200px; }
-.hp { position: relative; border-top: 1px solid var(--ink); padding-top: 14px; opacity: 0; height: 190px; }
+.home-health { position: absolute; display: grid; grid-template-columns: repeat(4, 1fr); gap: 48px; height: 150px; }
+.hp { position: relative; border-top: 1px solid var(--ink); padding-top: 12px; opacity: 0; height: 150px; }
 .hp .k { font-family: var(--mono); font-size: 14px; letter-spacing: .13em; text-transform: uppercase; color: var(--ink-50); display: flex; align-items: center; gap: 10px; }
 .hp .dot { width: 10px; height: 10px; border: 1.25px solid var(--ink); background: var(--paper); display: inline-block; }
 .hp.live .dot { background: var(--ely); border-color: var(--ely-ink); }
 .hp.pending .dot { background: var(--amber-fill); border-color: var(--amber); }
 .hp.failure .dot { background: var(--warn-fill); border-color: var(--warn); }
-.hp .v { font-family: var(--serif); font-size: 44px; margin-top: 12px; letter-spacing: -.01em; margin-top: 6px; color: var(--ink); line-height: 1.05; }
+.hp .v { font-family: var(--serif); font-size: 32px; margin-top: 8px; letter-spacing: -.01em; margin-top: 6px; color: var(--ink); line-height: 1.05; }
 .hp .v em { font-style: italic; font-weight: 300; color: var(--ely-ink); }
 .hp.pending .v em { color: var(--amber); } .hp.failure .v em { color: var(--warn); }
-.hp .d { font-family: var(--mono); font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-50); margin-top: 12px; white-space: normal; line-height: 1.6; }
+.hp .d { font-family: var(--mono); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-50); margin-top: 8px; white-space: normal; line-height: 1.6; }
 
 /* stage */
 #stage { position: absolute; top: 144px; left: 0; width: var(--W); height: 860px; overflow: visible; }
@@ -79,10 +79,10 @@ svg text.ink { fill: var(--ink); } svg text.ely { fill: var(--ely-ink); } svg te
 /* lanes */
 .lane { position: absolute; }
 .lane .track { position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: var(--rule-strong); }
-.lane .blk { position: absolute; top: 50%; width: 16px; height: 16px; will-change: transform; border: 1.25px solid var(--ink); background: var(--paper); }
-.lane .blk.ely { background: var(--ely); } .lane .blk.hl { background: var(--hl); } .lane .blk.hatch { background: var(--hatch); } .lane .blk.big { width: 26px; height: 26px; }
+.lane .blk { position: absolute; top: 50%; width: 16px; height: 16px; margin-top: -8px; will-change: transform; border: 1.25px solid var(--ink); background: var(--paper); }
+.lane .blk.ely { background: var(--ely); } .lane .blk.hl { background: var(--hl); } .lane .blk.hatch { background: var(--hatch); } .lane .blk.big { width: 26px; height: 26px; margin-top: -13px; }
 .lane .blk.cert { width: 22px; height: 22px; background: var(--ely); border-color: var(--ely-ink); }
-.lane .tick { position: absolute; top: 50%; left: 0; width: 3px; height: 28px; background: var(--ely-ink); will-change: transform; cursor: default; }
+.lane .tick { position: absolute; top: 50%; left: 0; width: 3px; height: 28px; margin-top: -14px; background: var(--ely-ink); will-change: transform; cursor: default; }
 .lane .tick:hover { background: var(--ink); } .lane .blk:hover { outline: 2px solid var(--ink); }
 .lane .grp { position: absolute; inset: 0; will-change: transform; }
 .lane .blk { left: 0; }
