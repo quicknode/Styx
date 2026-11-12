@@ -82,7 +82,8 @@ svg text.ink { fill: var(--ink); } svg text.ely { fill: var(--ely-ink); } svg te
 .lane .blk { position: absolute; top: 50%; width: 16px; height: 16px; will-change: transform; border: 1.25px solid var(--ink); background: var(--paper); }
 .lane .blk.ely { background: var(--ely); } .lane .blk.hl { background: var(--hl); } .lane .blk.hatch { background: var(--hatch); } .lane .blk.big { width: 26px; height: 26px; }
 .lane .blk.cert { width: 22px; height: 22px; background: var(--ely); border-color: var(--ely-ink); }
-.lane .tick { position: absolute; top: 50%; left: 0; width: 3px; height: 28px; background: var(--ely-ink); will-change: transform; }
+.lane .tick { position: absolute; top: 50%; left: 0; width: 3px; height: 28px; background: var(--ely-ink); will-change: transform; cursor: default; }
+.lane .tick:hover { background: var(--ink); } .lane .blk:hover { outline: 2px solid var(--ink); }
 .lane .grp { position: absolute; inset: 0; will-change: transform; }
 .lane .blk { left: 0; }
 .num.big { font-size: 44px; }

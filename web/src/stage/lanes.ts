@@ -1,5 +1,5 @@
 import gsap from 'gsap'
-import { at, h, layer, s, txt, prepDraw, G } from '../dom'
+import { at, h, layer, G } from '../dom'
 import type { Assertion, Batch, Head } from '../api'
 import { fmtAge } from '../api'
 
@@ -14,6 +14,7 @@ export class Lanes {
   root: HTMLElement
   svg: SVGSVGElement
   markers: HTMLElement
+  elyTitle!: HTMLElement; l1Title!: HTMLElement; l1Times: number[] = []
   elyNum: HTMLElement; l1Num: HTMLElement; openSeq: HTMLElement; openBlocks: HTMLElement; openAge: HTMLElement
   asrtRow: HTMLElement
   // geometry (stage coords)
@@ -33,8 +34,10 @@ export class Lanes {
     this.root = h('div', { style: 'position:absolute;inset:0' }); stage.append(this.root)
     this.svg = layer(); this.root.append(this.svg)
 
-    const elyPanel = at(h('div', { class: 'panel tint ely' }, [h('span', { class: 'panel-title ely' }, 'Elysium · L2 blocks · every 100 ms')]), this.X, 40, this.W, 160)
-    const l1Panel = at(h('div', { class: 'panel tint hl' }, [h('span', { class: 'panel-title hl' }, 'HyperEVM · settlement · every second')]), this.X, 310, this.W, 160)
+    this.elyTitle = h('span', { class: 'panel-title ely' }, 'Elysium · L2 blocks')
+    this.l1Title = h('span', { class: 'panel-title hl' }, 'HyperEVM · settlement')
+    const elyPanel = at(h('div', { class: 'panel tint ely' }, [this.elyTitle]), this.X, 40, this.W, 160)
+    const l1Panel = at(h('div', { class: 'panel tint hl' }, [this.l1Title]), this.X, 310, this.W, 160)
     this.root.append(elyPanel, l1Panel)
 
     const laneW = this.TRACK_R - this.TRACK_L
@@ -57,16 +60,29 @@ export class Lanes {
     this.root.append(this.elyNum, this.openSeq, this.openBlocks, this.l1Num, this.openAge)
 
     // connector
-    const cx = this.TRACK_R - 80
-    const conn = s('path', { class: 'hair2 dash', d: `M ${cx} ${this.EY + 40} V ${this.L1Y - 40}` }); this.svg.append(conn)
-    this.svg.append(txt(cx - 14, (this.EY + this.L1Y) / 2 + 5, 'certificate → calldata', '', 'end'))
 
     this.asrtRow = h('div')
-    for (const p of [conn]) { prepDraw(p as SVGGeometryElement); gsap.to(p, { strokeDashoffset: 0, duration: 1.2, ease: 'power2.out', delay: .4 }) }
     gsap.from([elyPanel, l1Panel], { opacity: 0, y: 14, duration: .9, stagger: .15, ease: 'power3.out' })
 
     gsap.ticker.add(this.tick)
+    for (const grp of [this.elyGroup, this.l1Group]) {
+      grp.parentElement!.addEventListener('mousemove', (e) => {
+        const t = (e.target as HTMLElement); const n = t.dataset.n
+        if (!n) { this.hideTip(); return }
+        const isL2 = grp === this.elyGroup
+        this.showTip(e, `<b>${isL2 ? 'Elysium' : 'HyperEVM'} block ${Number(n).toLocaleString('en-US')}</b><br>${t.dataset.t ? new Date(Number(t.dataset.t) * 1000).toLocaleTimeString('en-US', { hour12: false }) : ''}${isL2 ? '<br><span class="dim">waiting for the next batch</span>' : ''}`)
+      })
+      grp.parentElement!.addEventListener('mouseleave', () => this.hideTip())
+    }
   }
+  private tip?: HTMLElement
+  private showTip(e: MouseEvent, html: string) {
+    const deck = document.getElementById('deck')!
+    if (!this.tip) { this.tip = h('div', { class: 'tip' }); deck.append(this.tip) }
+    const r = deck.getBoundingClientRect(); const sc = r.width / 1920
+    this.tip.innerHTML = html; this.tip.style.left = Math.min(1920 - 340, (e.clientX - r.left) / sc + 16) + 'px'; this.tip.style.top = ((e.clientY - r.top) / sc - 12) + 'px'; this.tip.style.opacity = '1'
+  }
+  private hideTip() { if (this.tip) this.tip.style.opacity = '0' }
 
   private tick = () => {
     const now = performance.now()
@@ -96,7 +112,7 @@ export class Lanes {
 
   private lastTickAt = 0
   private interval = 100
-  setInterval(ms: number) { if (ms > 30 && ms < 2000) this.interval = ms }
+  setInterval(ms: number) { if (ms > 30 && ms < 2000) { this.interval = ms; this.elyTitle.textContent = `Elysium · L2 blocks · every ${Math.round(ms)} ms` } }
   /** Heads arrive in bursts over the socket; place ticks at an even cadence so the lane reads as the chain's real rhythm. */
   onHead(hd: Head) {
     this.setNum(this.elyNum, hd.number)
@@ -104,16 +120,18 @@ export class Lanes {
     let when = Math.max(now, this.lastTickAt + this.interval * 0.9)
     if (when - now > 600) when = now // never fall far behind reality
     this.lastTickAt = when
-    const t = h('div', { class: 'tick' }); const x = (when - this.elyT0) * this.ELY_SPEED + (this.TRACK_R - this.TRACK_L)
+    const t = h('div', { class: 'tick' }); t.dataset.n = String(hd.number); t.dataset.t = String(hd.timestamp); const x = (when - this.elyT0) * this.ELY_SPEED + (this.TRACK_R - this.TRACK_L)
     t.dataset.x = String(x); t.style.transform = `translate3d(${x}px,-50%,0)`
     this.elyGroup.append(t)
     gsap.fromTo(t, { scaleY: 2.4, opacity: 0 }, { scaleY: 1, opacity: 1, duration: .35, ease: 'power2.out' })
     this.updateWaiting()
   }
-  onL1Head(n: number) {
+  onL1Head(n: number, ts?: number) {
     if (n <= this.l1Head) return
     this.l1Head = n; this.setNum(this.l1Num, n)
-    const b = h('div', { class: 'blk hl' }); const x = this.l1NowX()
+    if (ts) { this.l1Times.push(ts); if (this.l1Times.length > 30) this.l1Times.shift() }
+    if (this.l1Times.length > 5) { const iv = (this.l1Times.at(-1)! - this.l1Times[0]) / (this.l1Times.length - 1); this.l1Title.textContent = `HyperEVM · settlement · every ${iv.toFixed(1)} s` }
+    const b = h('div', { class: 'blk hl' }); b.dataset.n = String(n); if (ts) b.dataset.t = String(ts); const x = this.l1NowX()
     b.dataset.x = String(x); b.style.transform = `translate3d(${x}px,-50%,0)`
     this.l1Group.append(b)
     gsap.fromTo(b, { scale: 1.8, opacity: 0 }, { scale: 1, opacity: 1, duration: .5, ease: 'back.out(2.5)' })

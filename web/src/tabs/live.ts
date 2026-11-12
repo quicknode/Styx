@@ -4,7 +4,7 @@ import { tooltip } from '../ui'
 import { Facts, ROW } from '../layout'
 import { Lanes } from '../stage/lanes'
 import { BridgePanel } from '../stage/bridge'
-import { fmtAge } from '../api'
+import { fmtAge, fmtAgeShort } from '../api'
 
 /** Live: two lanes, bridge rails, four facts. Everything else lives on its own tab. */
 export function liveTab(openTab: (id: string) => void) {
@@ -29,9 +29,9 @@ export function liveTab(openTab: (id: string) => void) {
     const conf = s.assertions.filter((a) => a.confirmedTime).at(-1)
     facts.set([
       { k: 'block time', v: `${Math.round(s.elysium.blockInterval)} <em>ms</em>`, s: `block ${s.elysium.head?.number.toLocaleString('en-US') ?? '—'}` },
-      { k: 'last batch', v: last ? `${fmtAge(now - last.l1Time)} <em>ago</em>` : '—', s: last ? `#${last.seq} · every ${fmtAge(s.health.batches.medianInterval)}` : '', cls: 'hl' },
-      { k: 'batching lag', v: s.elysium.unbatchedSeconds ? `${fmtAge(s.elysium.unbatchedSeconds)} <em>behind</em>` : 'caught <em>up</em>', s: s.elysium.unbatchedBlocks ? `${s.elysium.unbatchedBlocks.toLocaleString('en-US')} blocks waiting` : '', cls: s.elysium.unbatchedSeconds > 900 ? 'amber' : '' },
-      { k: 'last assertion', v: conf ? `${fmtAge(now - conf.confirmedTime!)} <em>ago</em>` : 'none <em>yet</em>', s: `${s.health.assertions.openCount} open claim${s.health.assertions.openCount === 1 ? '' : 's'}` },
+      { k: 'last batch', v: last ? `${fmtAgeShort(now - last.l1Time)} <em>ago</em>` : '—', s: last ? `#${last.seq} · every ${fmtAge(s.health.batches.medianInterval)}` : '', cls: 'hl' },
+      { k: 'batching lag', v: s.elysium.unbatchedSeconds ? `${fmtAgeShort(s.elysium.unbatchedSeconds)} <em>behind</em>` : 'caught <em>up</em>', s: s.elysium.unbatchedBlocks ? `${s.elysium.unbatchedBlocks.toLocaleString('en-US')} blocks waiting` : '', cls: s.elysium.unbatchedSeconds > 900 ? 'amber' : '' },
+      { k: 'last assertion', v: conf ? `${fmtAgeShort(now - conf.confirmedTime!)} <em>ago</em>` : 'none <em>yet</em>', s: `${s.health.assertions.openCount} open claim${s.health.assertions.openCount === 1 ? '' : 's'}` },
     ])
   }
   state.onSnapshot.on((s) => {
@@ -41,10 +41,11 @@ export function liveTab(openTab: (id: string) => void) {
     lanes.setInterval(s.elysium.blockInterval)
     if (!seeded) { seeded = true; lanes.seedMarkers(s.batches, s.assertions); if (s.hyperevm.head) lanes.onL1Head(s.hyperevm.head); for (const m of Array.from(lanes.markers.children) as HTMLElement[]) wireMarker(m) }
     bridge.setCounts(s.bridge.perHour)
+    { const w = s.bridge.withdrawals.at(-1); bridge.setLastWithdrawal(w ? s.now - w.l1Time : null) }
     refreshFacts(s)
   })
   state.onHead.on((hd) => { if (!state.paused) lanes.onHead(hd) })
-  state.onL1Head.on(({ number }) => lanes.onL1Head(number))
+  state.onL1Head.on(({ number, timestamp }) => lanes.onL1Head(number, timestamp))
   state.onBatch.on((b) => lanes.onBatch(b, Math.floor(Date.now() / 1000)))
   state.onAssertion.on(({ a, confirmed }) => lanes.onAssertion(a, confirmed))
   state.onDeposit.on((m) => bridge.deposit(m))

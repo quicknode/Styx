@@ -79,4 +79,6 @@ export const fmtTime = (unix: number) => new Date(unix * 1000).toLocaleTimeStrin
 export const fmtClock = (unix: number) => new Date(unix * 1000).toLocaleString('en-US', { hour12: false, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 
 export const fmtAge = (s: number) => (s < 60 ? `${Math.max(0, Math.round(s))} s` : s < 3600 ? `${Math.floor(s / 60)} min ${Math.round(s % 60)} s` : `${(s / 3600).toFixed(1)} h`)
+/** Coarse age for big type: seconds under a minute, whole minutes under an hour, tenths of an hour after. */
+export const fmtAgeShort = (s: number) => (s < 60 ? `${Math.max(0, Math.round(s))} s` : s < 3600 ? `${Math.round(s / 60)} min` : `${(s / 3600).toFixed(1)} h`)
 export const short = (h: string) => h.slice(0, 6) + '…' + h.slice(-4)
