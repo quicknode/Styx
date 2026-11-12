@@ -7,18 +7,17 @@ import gsap from 'gsap'
  */
 export function startWave(path: SVGPathElement, width = 96, mid = 6) {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
-  const N = 24
+  const N = 32
   const xs = Array.from({ length: N + 1 }, (_, i) => (i / N) * width)
   const t0 = performance.now()
-  let offset = 0
+  let shift = 0
+  // one fixed, irregular profile that slides sideways under the wordmark: the shape travels, it does not morph
+  const profile = (u: number) => 0.52 * Math.sin(u * 0.19) + 0.31 * Math.sin(u * 0.047 + 1.7) + 0.17 * Math.sin(u * 0.31 + 0.6)
   const tick = () => {
     const t = (performance.now() - t0) / 1000
-    // y(x,t): three travelling waves with incommensurate wavelengths and speeds, plus a slow breathing amplitude
-    const amp = 2.2 + 0.8 * Math.sin(t * 0.37)
-    const ys = xs.map((x) =>
-      mid +
-      amp * (0.55 * Math.sin(x * 0.21 - t * 1.13) + 0.30 * Math.sin(x * 0.37 + t * 0.71 + 1.3) + 0.15 * Math.sin(x * 0.09 - t * 0.29 + 2.1)))
-    // smooth Catmull-Rom through the samples
+    shift += (0.9 + 0.35 * Math.sin(t * 0.41)) * 0.03 * (gsap.ticker.deltaRatio() || 1)   // sideways speed wanders slowly, never stops or reverses
+    const amp = 2.4 + 0.4 * Math.sin(t * 0.23)
+    const ys = xs.map((x) => mid + amp * profile(x + shift))
     let d = `M ${xs[0].toFixed(2)} ${ys[0].toFixed(2)}`
     for (let i = 0; i < N; i++) {
       const p0 = i ? [xs[i - 1], ys[i - 1]] : [xs[0], ys[0]]
@@ -29,9 +28,6 @@ export function startWave(path: SVGPathElement, width = 96, mid = 6) {
       d += ` C ${c1[0].toFixed(2)} ${c1[1].toFixed(2)} ${c2[0].toFixed(2)} ${c2[1].toFixed(2)} ${p2[0].toFixed(2)} ${p2[1].toFixed(2)}`
     }
     path.setAttribute('d', d)
-    // dashes drift along the line; speed itself wanders a little so the flow does not look mechanical
-    offset -= (0.22 + 0.08 * Math.sin(t * 0.53)) * (gsap.ticker.deltaRatio() || 1)
-    path.style.strokeDashoffset = offset.toFixed(2) + 'px'
   }
   gsap.ticker.add(tick)
   return () => gsap.ticker.remove(tick)
