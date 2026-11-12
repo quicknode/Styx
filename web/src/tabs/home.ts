@@ -33,7 +33,7 @@ function verdict(hh: Health): { html: string; cls: string } {
 export function homeTab(openTab: (id: string) => void, lookup: (hash: string) => void) {
   const el = h('div')
   const title = at(h('h2', { class: 'verdict', 'aria-live': 'polite', html: 'Checking the <em>chain</em>…' }), G.x(1), 0); el.append(title)
-  const bar = at(h('div', { class: 'statusbar', role: 'list' }), G.x(1), 96, G.w(12)); el.append(bar)
+  const bar = at(h('div', { class: 'statusbar', role: 'list' }), G.x(1), 104, G.w(12)); el.append(bar)
   const items = new Map<string, { root: HTMLElement; word: HTMLElement; state: string }>()
   for (const it of ITEMS) {
     const word = h('span', { class: 'sword' }, '—')
@@ -43,15 +43,15 @@ export function homeTab(openTab: (id: string) => void, lookup: (hash: string) =>
     tooltip(root, () => `${state.snapshot ? `<b>${state.snapshot.health[it.key].detail}</b><br>` : ''}${RULE[it.key]}`)
     bar.append(root); items.set(it.key, { root, word, state: '' })
   }
-  const sentence = at(h('p', { class: 'home-detail' }, ''), G.x(1), 160, G.w(10)); el.append(sentence)
-  const next = at(h('p', { class: 'home-next' }, ''), G.x(1), 236, G.w(10)); el.append(next)
+  const sentence = at(h('p', { class: 'home-detail' }, ''), G.x(1), 184, G.w(10)); el.append(sentence)
+  const next = at(h('p', { class: 'home-next' }, ''), G.x(1), 262, G.w(10)); el.append(next)
 
-  const rule = at(h('div', { class: 'hair-x' }), G.x(1), 340, G.w(12)); el.append(rule)
-  const searchT = at(h('h3', { class: 'home-search-lbl', html: 'Where is my <em>transaction</em>?' }), G.x(1), 380); el.append(searchT)
+  const rule = at(h('div', { class: 'hair-x' }), G.x(1), 352, G.w(12)); el.append(rule)
+  const searchT = at(h('h3', { class: 'home-search-lbl', html: 'Where is my <em>transaction</em>?' }), G.x(1), 404); el.append(searchT)
   const input = h('input', { id: 'home-search', type: 'search', placeholder: 'Paste an Elysium transaction hash', spellcheck: 'false', autocomplete: 'off', 'aria-label': 'Elysium transaction hash' }) as HTMLInputElement
-  at(input, G.x(1), 452, G.w(9) - 16); el.append(input)
-  const sample = h('button', { class: 'home-go', type: 'button' }, [h('span', {}, 'Try the newest batched tx'), h('span', { class: 'arrow', 'aria-hidden': 'true' }, '→')]); at(sample, G.x(10), 452, G.w(3)); el.append(sample)
-  const hint = at(h('div', { class: 'home-hint' }, 'You will see where it is: included on Elysium, batched to HyperEVM, confirmed, or asserted.'), G.x(1), 540, G.w(9)); el.append(hint)
+  at(input, G.x(1), 476, G.w(9) - 16); el.append(input)
+  const sample = h('button', { class: 'home-go', type: 'button' }, [h('span', {}, 'Try the newest batched tx'), h('span', { class: 'arrow', 'aria-hidden': 'true' }, '→')]); at(sample, G.x(10), 476, G.w(3)); el.append(sample)
+  const hint = at(h('div', { class: 'home-hint' }, 'You will see where it is: included on Elysium, batched to HyperEVM, confirmed, or asserted.'), G.x(1), 564, G.w(9)); el.append(hint)
 
   const go = (hash: string) => { hash = hash.trim(); if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) { hint.textContent = 'That is not a transaction hash. It starts with 0x and has 64 hex characters.'; return } openTab('track'); setTimeout(() => lookup(hash), 300) }
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(input.value) })
@@ -69,13 +69,14 @@ export function homeTab(openTab: (id: string) => void, lookup: (hash: string) =>
       if (e.state !== st) { e.root.classList.remove('live', 'pending', 'failure'); if (st !== 'unknown') e.root.classList.add(st); gsap.fromTo(e.root.querySelector('.sq'), { scale: 1.8 }, { scale: 1, duration: .5, ease: 'back.out(2)' }); e.state = st }
     }
     const last = s.batches.at(-1); const now = s.now
+    const n = (x: string) => `<b class="n">${x}</b>`
     const parts = [
-      `Blocks every ${Math.round(s.elysium.blockInterval / 10) * 10} ms.`,
-      last ? `Last batch landed ${fmtAge(now - last.l1Time)} ago${s.elysium.unbatchedSeconds > 300 ? `, batching ${fmtAge(s.elysium.unbatchedSeconds)} behind head` : ''}.` : '',
-      hh.assertions.openCount && hh.assertions.confirmPeriod ? `${hh.assertions.openCount} state claim${hh.assertions.openCount === 1 ? '' : 's'} inside the ${Math.round(hh.assertions.confirmPeriod / 3600)} h challenge window.` : '',
+      `Blocks every ${n(Math.round(s.elysium.blockInterval / 10) * 10 + ' ms')}.`,
+      last ? `Last batch landed ${n(fmtAge(now - last.l1Time))} ago${s.elysium.unbatchedSeconds > 300 ? `, batching ${n(fmtAge(s.elysium.unbatchedSeconds))} behind head` : ''}.` : '',
+      hh.assertions.openCount && hh.assertions.confirmPeriod ? `${n(String(hh.assertions.openCount))} state claim${hh.assertions.openCount === 1 ? '' : 's'} inside the ${n(Math.round(hh.assertions.confirmPeriod / 3600) + ' h')} challenge window.` : '',
     ].filter(Boolean).join(' ')
     const shape = parts.replace(/\d[\d,.]*/g, '#')
-    sentence.textContent = parts
+    sentence.innerHTML = parts
     if (shape !== lastShape) { lastShape = shape; gsap.fromTo(sentence, { opacity: .4 }, { opacity: 1, duration: .4 }) }
     if (last && hh.batches.medianInterval) { const eta = hh.batches.medianInterval - (now - last.l1Time); next.textContent = eta > 30 ? `Next batch expected in about ${fmtAge(eta)}.` : 'Next batch expected any moment.' } else next.textContent = ''
   }
