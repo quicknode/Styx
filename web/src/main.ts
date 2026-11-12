@@ -10,8 +10,10 @@ import { assertionsTab } from './tabs/assertions'
 import { bridgeTab } from './tabs/bridge'
 import { trackTab } from './tabs/track'
 import { networkTab } from './tabs/network'
+import { startWave } from './wave'
 
 const deck = document.getElementById('deck')!
+startWave(document.querySelector('#eyebrow .wave path') as SVGPathElement)
 function fit() { const sc = Math.min(innerWidth / 1920, innerHeight / 1080); deck.style.transform = `translate(-50%,-50%) scale(${sc})` }
 addEventListener('resize', fit); fit()
 

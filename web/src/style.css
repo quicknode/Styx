@@ -30,7 +30,7 @@ html, body { height: 100%; background: #0e0e0d; color: var(--ink); font-family: 
 #eyebrow .wave { position: absolute; left: 1px; right: 4px; bottom: -9px; height: 12px; width: auto; overflow: visible; }
 #eyebrow .wave path { fill: none; stroke-width: 1.3; stroke-linecap: round; stroke-dasharray: 23 9 41 13 17 7; }
 /* one irregular strand: an uneven dash pattern flows along it and the line drifts on a sampled sine, so the motion is smooth and never visibly repeats */
-#eyebrow .wave .w1 { stroke: var(--ely-ink); stroke-width: 1.5; animation: flow 8.3s linear infinite, wobbleA 5.1s linear infinite; }
+#eyebrow .wave .w1 { stroke: var(--ely-ink); stroke-width: 1.5; }
 @keyframes flow { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -110; } }
 @keyframes flowBack { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 110; } }
 @keyframes wobbleA {
