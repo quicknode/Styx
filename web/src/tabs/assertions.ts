@@ -59,7 +59,7 @@ export function assertionsTab() {
         const bar = at(h('div', { class: 'claim open' + (sel ? ' sel' : ''), role: 'listitem', tabindex: '0', 'aria-label': `Claim ${short(a.hash)}, posted ${a.createdTime ? fmtClock(a.createdTime) : 'earlier'}, open` }), x0, y, openW, barH)
         wire(bar, a); rows.append(bar)
         if (overdue) { const late = at(h('div', { class: 'claim late' + (sel ? ' sel' : '') }), x(end), y, Math.max(3, x(now) - x(end)), barH); late.style.pointerEvents = 'none'; rows.append(late) }
-        else if (win > 0) { const ex = x(end); axis.append(svg('path', { class: 'hair2 dash', d: `M ${x(now)} ${y + barH / 2} H ${ex}` })); axis.append(svg('path', { class: 'ln', d: `M ${ex} ${y} V ${y + barH}`, style: 'stroke:var(--ink)' })) }
+        else if (win > 0) { const ex = x(end); axis.append(svg('path', { class: 'hair2 dash', d: `M ${x(now)} ${y + barH / 2} H ${ex}` })); if (end <= now + FUTURE) axis.append(svg('path', { class: 'ln', d: `M ${ex} ${y} V ${y + barH}`, style: 'stroke:var(--ink)' })) }
       }
     })
     if (animate) gsap.fromTo(Array.from(rows.children), { scaleX: 0, transformOrigin: 'left center' }, { scaleX: 1, duration: .4, stagger: .012, ease: 'power3.out' })
