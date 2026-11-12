@@ -30,9 +30,8 @@ html, body { height: 100%; background: #0e0e0d; color: var(--ink); font-family: 
 #eyebrow .wave { position: absolute; left: 1px; right: 4px; bottom: -8px; height: 10px; width: auto; overflow: visible; }
 #eyebrow .wave path { fill: none; stroke-width: 1.4; stroke-linecap: round; }
 /* one line: the colour travels along it via a sliding gradient, and a long dash sweeps with it (dash + gap = 320, so the loop covers 320) */
-/* the sweep runs left to right, eases into the turn, and comes back: one line, direction alternates on a smooth curve */
-#eyebrow .wave .w1 { stroke: url(#styxgrad); stroke-dasharray: 160; animation: flow 10s cubic-bezier(.45, 0, .55, 1) infinite alternate; }
-@keyframes flow { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -320; } }
+/* one unbroken line; a bright segment travels along it, eases into each turn, and comes back */
+#eyebrow .wave .w1 { stroke: url(#styxgrad); stroke-width: 1.6; }
 #eyebrow .sub { margin-left: 18px; padding-left: 18px; border-left: 1px solid var(--rule-strong); font-family: var(--mono); font-size: 12.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-50); line-height: 16px; }
 #lockup { position: absolute; left: 72px; top: 1030px; display: flex; align-items: center; gap: 22px; z-index: 4; }
 #lockup img { display: block; } #lockup .lk-ely { height: 24px; } #lockup .lk-qn { height: 19px; } #lockup .lk-x { width: 1px; height: 22px; background: var(--rule-strong); }
