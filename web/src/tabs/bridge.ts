@@ -23,14 +23,14 @@ export function bridgeTab() {
   w180.addEventListener('click', () => { windowMin = 180; w180.classList.add('on'); w60.classList.remove('on'); draw() })
   chips.append(w60, w180)
 
-  const CX = G.x(1), CY = 80, CW = G.w(12), CH = 200
+  const CX = G.x(1), CY = 84, CW = G.w(12), CH = 210
   const chart = at(h('div', { style: 'position:absolute' }), CX, CY, CW, CH); el.append(chart)
   const axis = layer(CW, CH); chart.append(axis)
   const bars = h('div', { style: 'position:absolute;inset:0' }); chart.append(bars)
-  const totals = at(h('div', { style: 'position:absolute;display:flex;gap:48px' }), G.x(1), CY + CH + 40); el.append(totals)
-  const feed = at(h('div', { class: 'table' }), G.x(1), CY + CH + 130, G.w(12)); el.append(feed)
-  const widths = [110, 230, 170, 260, 300]
-  const head = h('div', { class: 'th' }); ['when', 'kind', 'hyperevm block', 'message / tx', 'note'].forEach((t, i) => head.append(h('div', { class: 'td', style: `width:${widths[i]}px` }, t))); feed.append(head)
+  const totals = at(h('div', { style: 'position:absolute;display:flex;gap:96px' }), G.x(1), CY + CH + 40); el.append(totals)
+  const feed = at(h('div', { class: 'table' }), G.x(1), CY + CH + 150, G.w(12)); el.append(feed)
+  const widths = [160, 320, 260, 320]
+  const head = h('div', { class: 'th' }); ['when', 'kind', 'hyperevm block', 'transaction'].forEach((t, i) => head.append(h('div', { class: 'td', style: `width:${widths[i]}px` }, t))); feed.append(head)
   const body = h('div'); feed.append(body)
   const recent: ({ kind: Kind; t: number; blk: number; tx: string; note: string })[] = []
 
@@ -64,8 +64,8 @@ export function bridgeTab() {
   function drawFeed() {
     body.innerHTML = ''
     const s = state.snapshot; if (!s) return
-    for (const r of recent.slice(0, 7)) {
-      const rr = row([fmtTime(r.t), `<span class="chipbtn on ${KC[r.kind] === 'paper' ? '' : KC[r.kind] === 'hl' ? 'hl' : 'ely'}" style="height:22px;font-size:10.5px">${KL[r.kind]}</span>`, r.blk.toLocaleString('en-US'), '', r.note], widths)
+    for (const r of recent.slice(0, 4)) {
+      const rr = row([fmtTime(r.t), `<span class="chipbtn on ${KC[r.kind] === 'paper' ? '' : KC[r.kind] === 'hl' ? 'hl' : 'ely'}" style="height:28px;font-size:12px">${KL[r.kind]}</span>`, r.blk.toLocaleString('en-US'), ''], widths)
       rr.children[3].append(link(`${s.network.explorer.hyperevm}/tx/${r.tx}`, short(r.tx)))
       ;[0, 2].forEach((i) => rr.children[i].classList.add('mono'))
       body.append(rr)

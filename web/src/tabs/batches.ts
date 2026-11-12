@@ -17,7 +17,7 @@ export function batchesTab() {
   ;(Object.keys(chipEls) as Metric[]).forEach((k) => { chipEls[k].addEventListener('click', () => { metric = k; for (const kk of Object.keys(chipEls) as Metric[]) chipEls[kk].classList.toggle('on', kk === k); drawChart() }); chips.append(chipEls[k]) })
 
   // chart
-  const CX = G.x(1), CY = 80, CW = G.w(7), CH = 170
+  const CX = G.x(1), CY = 84, CW = G.w(7), CH = 190
   const chart = at(h('div', { style: 'position:absolute' }), CX, CY, CW, CH); el.append(chart)
   const axis = layer(CW, CH); chart.append(axis)
   const bars = h('div', { style: 'position:absolute;inset:0' }); chart.append(bars)
@@ -25,14 +25,14 @@ export function batchesTab() {
   const axisR = at(h('div', { class: 'lbl', style: 'text-align:right' }, ''), CX + CW - 300, CY + CH + 10, 300); el.append(axisR)
 
   // table
-  const widths = [90, 150, 230, 130, 150, 160, 120]
-  const table = at(h('div', { class: 'table' }), G.x(1), CY + CH + 48, G.w(7)); el.append(table)
-  const head = h('div', { class: 'th' }); ['batch', 'landed', 'elysium blocks', 'count', 'posting delay', 'data', 'hyperevm tx'].forEach((t, i) => head.append(h('div', { class: 'td', style: `width:${widths[i]}px` }, t))); table.append(head)
+  const widths = [120, 180, 380, 170, 200]
+  const table = at(h('div', { class: 'table' }), G.x(1), CY + CH + 52, G.w(7)); el.append(table)
+  const head = h('div', { class: 'th' }); ['batch', 'landed', 'elysium blocks', 'count', 'posting delay'].forEach((t, i) => head.append(h('div', { class: 'td', style: `width:${widths[i]}px` }, t))); table.append(head)
   const body = h('div', { class: 'tbody' }); table.append(body)
 
   // detail card
-  const DX = G.x(9), DY = 80, DW = G.w(4)
-  const card = at(h('div', { class: 'panel ely' }, [h('span', { class: 'panel-title ely' }, 'Selected batch')]), DX, DY, DW, 520); el.append(card)
+  const DX = G.x(9), DY = 84, DW = G.w(4)
+  const card = at(h('div', { class: 'panel ely' }, [h('span', { class: 'panel-title ely' }, 'Selected batch')]), DX, DY, DW, 556); el.append(card)
   const cardBody = h('div', { style: 'position:absolute;inset:0' }); card.append(cardBody)
 
   function value(b: Batch, m: Metric) { return m === 'delay' ? (b.postingDelay ?? -1) : m === 'blocks' ? (b.l2Blocks ?? 0) : b.dataBytes }
@@ -56,18 +56,15 @@ export function batchesTab() {
     axisLbl.textContent = `#${list[0].seq}`; axisR.textContent = `#${list.at(-1)!.seq} · ${LABEL[metric]}`
   }
   function drawTable() {
-    const list = (state.snapshot?.batches ?? []).slice(-9).reverse()
+    const list = (state.snapshot?.batches ?? []).slice(-5).reverse()
     body.innerHTML = ''
     for (const b of list) {
       const r = row([
-        `<span class="mono">#${b.seq}</span>`, fmtTime(b.l1Time),
+        `#${b.seq}`, fmtTime(b.l1Time),
         b.l2FirstBlock ? `${b.l2FirstBlock.toLocaleString('en-US')} → ${b.l2LastBlock!.toLocaleString('en-US')}` : '—',
         b.l2Blocks ? b.l2Blocks.toLocaleString('en-US') : '—', b.postingDelay !== undefined ? fmtAge(b.postingDelay) : '…',
-        b.daMode === 'anytrust' ? `cert ${b.daHeader} · ${b.dataBytes} B` : `${b.daMode} · ${b.dataBytes} B`,
-        '',
       ], widths, 'click' + (b.seq === state.selectedBatch ? ' sel' : ''))
-      r.querySelectorAll('.td').forEach((td, i) => { if ([0, 2, 3, 4, 5].includes(i)) td.classList.add('mono') })
-      r.children[6].append(link(`${state.snapshot!.network.explorer.hyperevm}/tx/${b.txHash}`, short(b.txHash)))
+      r.querySelectorAll('.td').forEach((td) => td.classList.add('mono'))
       r.addEventListener('click', () => selectBatch(b.seq))
       body.append(r)
     }
@@ -78,18 +75,18 @@ export function batchesTab() {
     const b = s.batches.find((x) => x.seq === state.selectedBatch) ?? s.batches.at(-1); if (!b) return
     cardBody.innerHTML = ''
     const kv = (x: number, y: number, k: string, v: string, sub = '', mono = false) => cardBody.append(at(h('div', { class: 'kv' }, [h('div', { class: 'k' }, k), h('div', { class: 'v' + (mono ? ' mono' : ''), html: v }), ...(sub ? [h('div', { class: 's', html: sub })] : [])]), x, y))
-    kv(28, 36, 'batch', `#${b.seq}`, `landed ${fmtTime(b.l1Time)} · HyperEVM block ${b.l1Block.toLocaleString('en-US')}`)
-    kv(28, 130, 'elysium blocks', b.l2Blocks ? `${b.l2Blocks.toLocaleString('en-US')} <em>blocks</em>` : '—', b.l2FirstBlock ? `${b.l2FirstBlock.toLocaleString('en-US')} → ${b.l2LastBlock!.toLocaleString('en-US')}` : '')
-    kv(28, 224, 'posting delay', b.postingDelay !== undefined ? `${fmtAge(b.postingDelay)} <em>after</em> its last block` : 'resolving…', b.l2LastTime ? `last block ${fmtTime(b.l2LastTime)} → landed ${fmtTime(b.l1Time)}` : '')
-    kv(28, 318, 'data availability', b.daMode === 'anytrust' ? 'AnyTrust <em>certificate</em>' : b.daMode === 'fulldata' ? 'Full data <em>fallback</em>' : b.daMode, `header byte ${b.daHeader} · ${b.dataBytes} bytes of calldata`)
-    const links = at(h('div', { style: 'position:absolute;display:flex;flex-direction:column;gap:10px' }), 28, 418)
-    links.append(h('div', { class: 's', style: 'font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--ink-50)' }, ['HyperEVM tx ', link(`${s.network.explorer.hyperevm}/tx/${b.txHash}`, short(b.txHash)), copyBtn(b.txHash)]))
-    if (b.l2LastBlock) links.append(h('div', { class: 's', style: 'font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--ink-50)' }, ['Last Elysium block ', link(`${s.network.explorer.elysium}/block/${b.l2LastBlock}`, b.l2LastBlock.toLocaleString('en-US'))]))
+    kv(32, 40, 'batch', `#${b.seq}`, `landed ${fmtTime(b.l1Time)} · HyperEVM block ${b.l1Block.toLocaleString('en-US')}`)
+    kv(32, 140, 'elysium blocks', b.l2Blocks ? `${b.l2Blocks.toLocaleString('en-US')} <em>blocks</em>` : '—', b.l2FirstBlock ? `${b.l2FirstBlock.toLocaleString('en-US')} → ${b.l2LastBlock!.toLocaleString('en-US')}` : '')
+    kv(32, 240, 'posting delay', b.postingDelay !== undefined ? `${fmtAge(b.postingDelay)} <em>after</em> its last block` : 'resolving…', b.l2LastTime ? `last block ${fmtTime(b.l2LastTime)} → landed ${fmtTime(b.l1Time)}` : '')
+    kv(32, 340, 'data availability', b.daMode === 'anytrust' ? 'AnyTrust <em>certificate</em>' : b.daMode === 'fulldata' ? 'Full data <em>fallback</em>' : b.daMode, `header byte ${b.daHeader} · ${b.dataBytes} bytes of calldata`)
+    const links = at(h('div', { style: 'position:absolute;display:flex;flex-direction:column;gap:12px' }), 32, 450)
+    links.append(h('div', { class: 's', style: 'font-family:var(--mono);font-size:14px;letter-spacing:.06em;color:var(--ink-50)' }, ['HyperEVM tx ', link(`${s.network.explorer.hyperevm}/tx/${b.txHash}`, short(b.txHash)), copyBtn(b.txHash)]))
+    if (b.l2LastBlock) links.append(h('div', { class: 's', style: 'font-family:var(--mono);font-size:14px;letter-spacing:.06em;color:var(--ink-50)' }, ['Last Elysium block ', link(`${s.network.explorer.elysium}/block/${b.l2LastBlock}`, b.l2LastBlock.toLocaleString('en-US'))]))
     cardBody.append(links)
     // a small dimension line: last L2 block time → L1 inclusion
-    const sv = layer(DW, 520); cardBody.append(sv)
+    const sv = layer(DW, 556); cardBody.append(sv)
     if (b.postingDelay !== undefined) {
-      const y = 300; const x1 = 28, x2 = DW - 28
+      const y = 322; const x1 = 32, x2 = DW - 32
       const p = svg('path', { class: 'ln ely', d: `M ${x1} ${y + 6} V ${y} H ${x2} V ${y + 6}` }); sv.append(p)
       const len = p.getTotalLength(); p.style.strokeDasharray = String(len); p.style.strokeDashoffset = String(len)
       gsap.to(p, { strokeDashoffset: 0, duration: .9, ease: 'power2.out' })

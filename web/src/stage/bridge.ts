@@ -2,65 +2,48 @@ import gsap from 'gsap'
 import { at, h, layer, s, txt, prepDraw, G } from '../dom'
 import type { BridgeMsg, Withdrawal } from '../api'
 
-/** Bridge flow panel: deposits climb from HyperEVM to Elysium, withdrawals drop back. */
+/** Bridge panel on the Live tab: two big numbers and particles crossing between the rails. */
 export class BridgePanel {
   root: HTMLElement
-  counts: Record<'hype' | 'retryable' | 'other' | 'withdrawals', HTMLElement>
-  shown: Record<string, number> = { hype: 0, retryable: 0, other: 0, withdrawals: 0 }
+  inEl: HTMLElement; outEl: HTMLElement
+  shown = { in: 0, out: 0 }
   field: HTMLElement
-  X = G.x(1); Y = 500; W = G.w(6); H = 140
+  X = G.x(1); Y = 556; W = G.w(12); H = 84
   constructor(stage: HTMLElement) {
-    this.root = at(h('div', { class: 'panel' }, [h('span', { class: 'panel-title' }, 'Bridge · HyperEVM ↔ Elysium · last hour')]), this.X, this.Y, this.W, this.H)
+    this.root = at(h('div', { class: 'panel' }, [h('span', { class: 'panel-title' }, 'Bridge · last hour')]), this.X, this.Y, this.W, this.H)
     stage.append(this.root)
     const svg = layer(this.W, this.H); this.root.append(svg)
-    // two rails: HyperEVM at bottom, Elysium at top; particles travel between them
-    const top = s('path', { class: 'ln ely', d: `M 24 30 H 300` }); const bot = s('path', { class: 'ln hl', d: `M 24 ${this.H - 30} H 300` })
-    svg.append(top, bot, txt(24, 22, 'Elysium', 'ely'), txt(24, this.H - 36, 'HyperEVM', 'hl'))
+    const top = s('path', { class: 'ln ely', d: `M 32 22 H 700` }); const bot = s('path', { class: 'ln hl', d: `M 32 ${this.H - 20} H 700` })
+    svg.append(top, bot, txt(32, 14, 'Elysium', 'ely'), txt(32, this.H - 26, 'HyperEVM', 'hl'))
     for (const p of [top, bot]) { prepDraw(p); gsap.to(p, { strokeDashoffset: 0, duration: 1, ease: 'power2.out', delay: .6 }) }
-    this.field = at(h('div', { style: 'position:absolute;left:0;top:0;width:320px;height:100%;overflow:hidden' }), 0, 0)
-    this.root.append(this.field)
-    const mk = (label: string, cls: string, x: number, y: number) => {
-      const v = h('div', { class: 'num ' + cls, html: '0' }); at(v, x, y)
-      const l = h('div', { class: 'lbl' }, label); at(l, x, y + 38)
+    this.field = at(h('div', { style: 'position:absolute;left:0;top:0;width:720px;height:100%;overflow:hidden' }), 0, 0); this.root.append(this.field)
+    const mk = (label: string, cls: string, x: number) => {
+      const v = h('div', { class: 'num ' + cls }, '0'); at(v, x, 16)
+      const l = h('div', { class: 'lbl' }, label); at(l, x, 56)
       this.root.append(v, l); return v
     }
-    this.counts = {
-      hype: mk('HYPE in', 'hl', 340, 26),
-      retryable: mk('tokens in', '', 500, 26),
-      other: mk('messages in', '', 660, 26),
-      withdrawals: mk('withdrawals out', 'ely', 340, 86),
-    }
-    this.root.append(at(h('div', { class: 'lbl', style: 'color:var(--ink-50);white-space:normal;line-height:1.5;width:340px;font-size:11.5px' }, 'Deposits arrive on Elysium as retryable tickets. Withdrawals clear after the challenge window.'), 500, 92))
+    this.inEl = mk('deposits into Elysium', 'hl', 800)
+    this.outEl = mk('withdrawals to HyperEVM', 'ely', 1200)
   }
   setCounts(c: { hype: number; retryable: number; other: number; withdrawals: number }) {
-    for (const k of Object.keys(c) as (keyof typeof c)[]) {
-      const el = this.counts[k]; const from = this.shown[k]; const to = c[k]
-      if (from === to) continue
+    const inN = c.hype + c.retryable + c.other
+    for (const [k, el, to] of [['in', this.inEl, inN], ['out', this.outEl, c.withdrawals]] as const) {
+      const from = this.shown[k]; if (from === to) continue
       const o = { v: from }
-      gsap.to(o, { v: to, duration: .8, ease: 'power2.out', onUpdate: () => { el.textContent = Math.round(o.v).toLocaleString() } })
+      gsap.to(o, { v: to, duration: .9, ease: 'power2.out', onUpdate: () => { el.textContent = Math.round(o.v).toLocaleString('en-US') } })
       this.shown[k] = to
     }
   }
-  deposit(m: BridgeMsg) {
-    const coin = h('div', { class: 'coin' + (m.kind === 12 ? '' : ' rt') })
-    const x = 40 + Math.random() * 240
-    at(coin, x, this.H - 30)
-    this.field.append(coin)
+  private fly(cls: string, fromY: number, toY: number, target: HTMLElement) {
+    const coin = h('div', { class: 'coin ' + cls }); const x = 60 + Math.random() * 620
+    at(coin, x, fromY); this.field.append(coin)
+    const drift = (Math.random() - .5) * 60
     gsap.timeline({ onComplete: () => coin.remove() })
       .fromTo(coin, { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: .25, ease: 'back.out(2)' })
-      .to(coin, { top: 30, duration: 1.4, ease: 'power1.inOut' })
-      .to(coin, { scale: 0, opacity: 0, duration: .3 })
-    gsap.fromTo(this.counts[m.kind === 12 ? 'hype' : m.kind === 9 ? 'retryable' : 'other'], { scale: 1.12 }, { scale: 1, duration: .5, ease: 'back.out(2)' })
+      .to(coin, { y: toY - fromY, x: drift, duration: 1.3, ease: 'power1.inOut' }, 0)
+      .to(coin, { scale: 0, opacity: 0, duration: .25 })
+    gsap.fromTo(target, { scale: 1.1 }, { scale: 1, duration: .5, ease: 'back.out(2)' })
   }
-  withdrawal(_w: Withdrawal) {
-    const coin = h('div', { class: 'coin out' })
-    const x = 40 + Math.random() * 240
-    at(coin, x, 30)
-    this.field.append(coin)
-    gsap.timeline({ onComplete: () => coin.remove() })
-      .fromTo(coin, { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: .25, ease: 'back.out(2)' })
-      .to(coin, { top: this.H - 30, duration: 1.4, ease: 'power1.inOut' })
-      .to(coin, { scale: 0, opacity: 0, duration: .3 })
-    gsap.fromTo(this.counts.withdrawals, { scale: 1.12 }, { scale: 1, duration: .5, ease: 'back.out(2)' })
-  }
+  deposit(m: BridgeMsg) { this.fly(m.kind === 12 ? '' : 'rt', this.H - 20, 22, this.inEl) }
+  withdrawal(_w: Withdrawal) { this.fly('out', 22, this.H - 20, this.outEl) }
 }

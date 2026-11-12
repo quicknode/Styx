@@ -1,10 +1,8 @@
-import gsap from 'gsap'
 import { h } from '../dom'
 import { state, selectBatch } from '../state'
 import { tooltip } from '../ui'
 import { Lanes } from '../stage/lanes'
 import { BridgePanel } from '../stage/bridge'
-import { Tracker } from '../stage/tracker'
 import { fmtAge, fmtTime } from '../api'
 
 /** The overview: two lanes, assertion row, bridge panel, and the compact tracker. Markers are clickable. */
@@ -12,7 +10,6 @@ export function liveTab(openTab: (id: string) => void) {
   const el = h('div', { class: 'lanes-clickable' })
   const lanes = new Lanes(el)
   const bridge = new BridgePanel(el)
-  const tracker = new Tracker(el)
   let seeded = false
 
   const wireMarker = (m: HTMLElement) => {
@@ -45,8 +42,6 @@ export function liveTab(openTab: (id: string) => void) {
   state.onWithdrawal.on((w) => bridge.withdrawal(w))
   state.onNet.on(() => { seeded = false; lanes.markers.innerHTML = ''; lanes.asrtRow.innerHTML = ''; lanes.assertions = [] })
 
-  const keepAges = setInterval(() => { const last = state.snapshot?.batches.at(-1); if (last) lanes.openAge.textContent = `last batch #${last.seq} · ${fmtAge(Math.floor(Date.now() / 1000) - last.l1Time)} ago` }, 1000)
-  void keepAges
-  return { el, tracker, lanes }
+  setInterval(() => { const last = state.snapshot?.batches.at(-1); if (last) lanes.openAge.textContent = `last batch #${last.seq} · ${fmtAge(Math.floor(Date.now() / 1000) - last.l1Time)} ago` }, 1000)
+  return { el, lanes }
 }
-export function pulse(el: Element) { gsap.fromTo(el, { scale: 1.06 }, { scale: 1, duration: .5, ease: 'back.out(2)' }) }

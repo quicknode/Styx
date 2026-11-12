@@ -333,7 +333,8 @@ export class Collector extends EventEmitter {
       head ? `Elysium is producing a block every ${Math.round(interval)} ms.` : 'Waiting for Elysium blocks.',
       last ? `The last batch landed on HyperEVM ${fmtAge(lastBatchAge)} ago${mode === 'anytrust' ? ' carrying an AnyTrust certificate' : mode === 'fulldata' ? ' with full data, the committee fallback' : ''}${this.unbatchedSeconds() > 300 ? `, and batching is running ${fmtAge(this.unbatchedSeconds())} behind the chain head` : ''}.` : '',
       lastConf ? `The last assertion was confirmed ${fmtAge(lastConfirmedAge)} ago.` : '',
-      `${hour} deposit${hour === 1 ? '' : 's'} and ${whour} withdrawal${whour === 1 ? '' : 's'} in the last hour.`,
+      hour || whour ? `${hour.toLocaleString('en-US')} deposits in, ${whour} withdrawals out, this hour.` : '',
+
     ].filter(Boolean).join(' ')
 
     return {

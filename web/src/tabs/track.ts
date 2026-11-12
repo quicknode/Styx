@@ -17,8 +17,8 @@ export function trackTab() {
   el.append(at(h('div', { class: 'h2', html: 'Follow one transaction <em>home</em>.' }), G.x(1), 16))
   const input = h('input', { id: 'trk-big', placeholder: 'Paste an Elysium transaction hash (0x…)', spellcheck: 'false', autocomplete: 'off' }) as HTMLInputElement
   input.className = ''; input.id = 'trk-big'
-  at(input, G.x(1), 80, G.w(8)); el.append(input)
-  const sample = h('button', { class: 'btn ely' }, 'Try the newest batched tx'); at(sample, G.x(10), 80); el.append(sample)
+  at(input, G.x(1), 80, G.w(9) - 16); el.append(input)
+  const sample = h('button', { class: 'btn ely' }, 'Try the newest batched tx'); at(sample, G.x(10), 80, G.w(3)); sample.style.justifyContent = 'center'; el.append(sample)
   const status = at(h('div', { class: 'lbl', style: 'color:var(--ink-50)' }, 'The ladder below fills in as the transaction moves from Elysium to HyperEVM.'), G.x(1), 140); el.append(status)
   const ladder = at(h('div', { style: 'position:absolute' }), G.x(1), 180, G.w(12), 360); el.append(ladder)
   const steps = STEPS.map((s, i) => {
