@@ -388,3 +388,11 @@ svg text.ink { fill: var(--ink); } svg text.ely { fill: var(--ely-ink); } svg te
 .stem.sel { background: var(--ely-ink); width: 3px; }
 .stemcap { position: absolute; border: 1.25px solid var(--ink); background: var(--ely); pointer-events: none; }
 .stemcap.full { background: var(--amber-fill); border-color: var(--amber); }
+
+/* ---------- assertions staircase ---------- */
+.claim { position: absolute; box-sizing: border-box; border: 1px solid var(--ink); cursor: pointer; will-change: transform; }
+.claim.done { background: var(--ink); }
+.claim.open { background: var(--hatch); border-color: var(--rule-strong); }
+.claim.late { background: var(--amber-mid); border-color: var(--amber); }
+.claim.sel { outline: 2px solid var(--ely-ink); outline-offset: 1px; }
+.lg-ink { background: var(--ink); } .lg-amber { background: var(--amber-mid); border-color: var(--amber); } .lg-dash { border: 0; border-top: 1px dashed var(--ink); height: 0; width: 18px; }

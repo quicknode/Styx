@@ -122,10 +122,10 @@ export class Collector extends EventEmitter {
   }
   lastL1Ref = { number: 0, l1: 0 }
 
-  /** Assertions are rare; look back a full day for the Rollup contract only so cadence can be learned. */
+  /** Assertions are rare; look back two days for the Rollup contract only so both ends of each claim are in view. */
   private async backfillRollupDeep() {
     const to = Math.max(1, this.l1Head - this.backfillBlocks)
-    const from = Math.max(1, this.l1Head - 86400)
+    const from = Math.max(1, this.l1Head - 172800)
     if (to <= from) return
     try {
       for (let a = from; a < to; a += 1000) {
@@ -133,7 +133,7 @@ export class Collector extends EventEmitter {
         const logs = await this.fetchLogs(this.net.contracts.rollup, [[TOPICS.AssertionCreated, TOPICS.AssertionConfirmed] as any], a, b)
         if (logs.length) { await this.ensureTimestamps([...new Set(logs.map((l) => hexToNum(l.blockNumber)))]); for (const l of logs) await this.handleLog(l, true) }
       }
-      console.log(`[collector] rollup deep backfill: ${this.assertions.size} assertions over 24 h`)
+      console.log(`[collector] rollup deep backfill: ${this.assertions.size} assertions over 48 h`)
     } catch (e) { console.warn('[rollup deep backfill]', (e as Error).message) }
     // Batches: a full day so the Batches tab has a real series (mainnet posts one every 10-25 min).
     try {
@@ -454,7 +454,7 @@ export class Collector extends EventEmitter {
       elysium: { head, blockInterval: this.blockIntervalMs(), l1Lag, recentHeads: this.heads.slice(-60), unbatchedBlocks: this.unbatched(), unbatchedSeconds: this.unbatchedSeconds() },
       hyperevm: { head: this.l1Head, headTime: this.l1HeadTime },
       batches: [...this.batches.values()].sort((a, b) => a.seq - b.seq).slice(-120),
-      assertions: [...this.assertions.values()].sort((a, b) => (a.createdBlock ?? a.confirmedBlock ?? 0) - (b.createdBlock ?? b.confirmedBlock ?? 0)).slice(-40),
+      assertions: [...this.assertions.values()].sort((a, b) => (a.createdBlock ?? a.confirmedBlock ?? 0) - (b.createdBlock ?? b.confirmedBlock ?? 0)).slice(-90),
       bridge: {
         deposits, withdrawals: this.withdrawals.slice(-100),
         perHour: lh,
