@@ -13,11 +13,12 @@
     <div id="frame">
       <div id="deck">
         <div id="top">
-          <div id="eyebrow"><span id="livedot" aria-hidden="true"></span><b>Elysium Settlement Monitor</b><span id="netname" class="sr">mainnet</span></div>
+          <div id="eyebrow"><b>Elysium Settlement Monitor</b><span id="netname" class="sr">mainnet</span></div>
           <div id="tabs"></div>
           <div id="netswitch">
-            <label class="sr" for="netsel">Network</label>
-            <select id="netsel"><option value="mainnet">Mainnet</option><option value="testnet">Testnet</option></select>
+            <span id="livedot" aria-hidden="true"></span>
+            <button id="netbtn" type="button" aria-haspopup="listbox" aria-expanded="false" aria-label="Network">Mainnet<span class="caret" aria-hidden="true"></span></button>
+            <ul id="netmenu" role="listbox" hidden><li role="option" data-net="mainnet" aria-selected="true">Mainnet</li><li role="option" data-net="testnet" aria-selected="false">Testnet</li></ul>
           </div>
         </div>
         <div id="toprule"></div>

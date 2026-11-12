@@ -34,9 +34,20 @@ gsap.from('#toprule', { scaleX: 0, duration: 1.2, ease: 'power3.out' })
 gsap.from('#top', { opacity: 0, y: 8, duration: .9, ease: 'power3.out' })
 
 // ---- network switch ----
-const sel = document.getElementById('netsel') as HTMLSelectElement
+const netbtn = document.getElementById('netbtn') as HTMLButtonElement
+const netmenu = document.getElementById('netmenu') as HTMLUListElement
 const livedot = document.getElementById('livedot')!
-function paintNet() { sel.value = state.net; netname.textContent = state.net }
+function paintNet() {
+  netbtn.firstChild!.textContent = state.net === 'mainnet' ? 'Mainnet' : 'Testnet'; netname.textContent = state.net
+  for (const li of Array.from(netmenu.children) as HTMLElement[]) li.setAttribute('aria-selected', String(li.dataset.net === state.net))
+}
+function toggleMenu(open?: boolean) { const o = open ?? netmenu.hidden; netmenu.hidden = !o; netbtn.setAttribute('aria-expanded', String(o)); if (o) (netmenu.querySelector('[aria-selected=true]') as HTMLElement)?.classList.add('focus') }
+netbtn.addEventListener('click', () => toggleMenu())
+netmenu.addEventListener('click', (e) => { const li = (e.target as HTMLElement).closest('li') as HTMLElement | null; if (!li || li.getAttribute('aria-disabled') === 'true') return; toggleMenu(false); if (li.dataset.net !== state.net) start(li.dataset.net as Net) })
+addEventListener('click', (e) => { if (!netmenu.hidden && !(e.target as HTMLElement).closest('#netswitch')) toggleMenu(false) })
+netbtn.addEventListener('keydown', (e) => { if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleMenu(true); (netmenu.querySelector('li') as HTMLElement)?.focus() } })
+netmenu.addEventListener('keydown', (e) => { const items = Array.from(netmenu.querySelectorAll('li')) as HTMLElement[]; const i = items.indexOf(document.activeElement as HTMLElement); if (e.key === 'ArrowDown') { e.preventDefault(); items[(i + 1) % items.length].focus() } if (e.key === 'ArrowUp') { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus() } if (e.key === 'Escape') { toggleMenu(false); netbtn.focus() } if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (document.activeElement as HTMLElement).click() } })
+for (const li of Array.from(netmenu.children)) li.setAttribute('tabindex', '-1')
 let disconnect: (() => void) | null = null
 function applySnapshot(s: Snapshot) {
   state.snapshot = s
@@ -62,8 +73,7 @@ function start(net: Net) {
   const tab = tabs.current?.id ?? tabs.fromHash()
   location.hash = `tab=${tab}&net=${net}`
 }
-sel.addEventListener('change', () => { if (sel.value !== state.net) start(sel.value as Net) })
-fetchNetworks().then((r) => { for (const o of Array.from(sel.options)) o.disabled = !r.networks.includes(o.value as Net); if (!r.networks.includes(state.net) && r.networks[0]) state.net = r.networks[0]; start(state.net) }).catch(() => start(state.net))
+fetchNetworks().then((r) => { for (const li of Array.from(netmenu.children) as HTMLElement[]) li.setAttribute('aria-disabled', String(!r.networks.includes(li.dataset.net as Net))); if (!r.networks.includes(state.net) && r.networks[0]) state.net = r.networks[0]; start(state.net) }).catch(() => start(state.net))
 state.onSnapshot.on((s) => livedot.classList.toggle('off', s.health.sequencer.state === 'failure'))
 
 /** A soft paper flash on settlement events, the way a stamp lands. */

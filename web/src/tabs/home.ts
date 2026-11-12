@@ -7,17 +7,17 @@ import { fetchSampleTx, type Snapshot } from '../api'
 /** Home: is Elysium settling properly right now? Four lights, one sentence, one search box. */
 export function homeTab(openTab: (id: string) => void, lookup: (hash: string) => void) {
   const el = h('div')
-  const searchT = at(h('h2', { class: 'home-search-lbl', html: 'Where is my <em>transaction</em>?' }), G.x(1), 0); el.append(searchT)
+  const searchT = at(h('h2', { class: 'home-search-lbl', html: 'Where is my <em>transaction</em>?' }), G.x(1), 8); el.append(searchT)
   const input = h('input', { id: 'home-search', type: 'search', placeholder: 'Paste an Elysium transaction hash', spellcheck: 'false', autocomplete: 'off', 'aria-label': 'Elysium transaction hash' }) as HTMLInputElement
-  at(input, G.x(1), 72, G.w(9) - 16); el.append(input)
-  const sample = h('button', { class: 'btn ely', type: 'button' }, 'Try the newest batched tx'); at(sample, G.x(10), 72, G.w(3)); sample.style.position = 'absolute'; sample.style.justifyContent = 'center'; sample.style.height = '72px'; el.append(sample)
-  const hint = at(h('div', { class: 'home-hint' }, 'You will see where it is: included on Elysium, batched to HyperEVM, confirmed, or asserted.'), G.x(1), 156, G.w(9)); el.append(hint)
+  at(input, G.x(1), 88, G.w(9) - 16); el.append(input)
+  const sample = h('button', { class: 'home-go', type: 'button' }, [h('span', {}, 'Try the newest batched tx'), h('span', { class: 'arrow', 'aria-hidden': 'true' }, '→')]); at(sample, G.x(10), 88, G.w(3)); el.append(sample)
+  const hint = at(h('div', { class: 'home-hint' }, 'You will see where it is: included on Elysium, batched to HyperEVM, confirmed, or asserted.'), G.x(1), 176, G.w(9)); el.append(hint)
 
-  const strip = at(h('div', { class: 'home-health' }), G.x(1), 236, G.w(12)); el.append(strip)
+  const strip = at(h('div', { class: 'home-health' }), G.x(1), 300, G.w(12)); el.append(strip)
   const health = new HealthStrip(strip, (k) => openTab(k === 'sequencer' ? 'live' : k === 'data' ? 'batches' : k))
 
-  const title = at(h('h2', { class: 'h2 home-title', html: 'Is Elysium <em>settling</em> right now?' }), G.x(1), 480); el.append(title)
-  const sentence = at(h('p', { class: 'home-sentence', 'aria-live': 'polite' }, 'Connecting…'), G.x(1), 552, G.w(9)); el.append(sentence)
+  const title = at(h('h2', { class: 'h2 home-title', html: 'Is Elysium <em>settling</em> right now?' }), G.x(1), 600); el.append(title)
+  const sentence = at(h('p', { class: 'home-sentence', 'aria-live': 'polite' }, 'Connecting…'), G.x(1), 680, G.w(9)); el.append(sentence)
 
   const go = (hash: string) => { hash = hash.trim(); if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) { hint.textContent = 'That is not a transaction hash. It starts with 0x and has 64 hex characters.'; return } openTab('track'); setTimeout(() => lookup(hash), 300) }
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(input.value) })
