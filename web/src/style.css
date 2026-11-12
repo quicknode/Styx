@@ -371,7 +371,7 @@ svg text.ink { fill: var(--ink); } svg text.ely { fill: var(--ely-ink); } svg te
 .legend { position: absolute; display: flex; justify-content: flex-end; gap: 22px; font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-50); white-space: nowrap; }
 .legend span { display: inline-flex; align-items: center; gap: 8px; }
 .lg { display: inline-block; width: 14px; height: 10px; border: 1px solid var(--ink); }
-.lg.seg { background: var(--ely); border-color: var(--ely-ink); } .lg.stem { width: 2px; height: 14px; background: var(--ink); border: 0; } .lg.wait { background: var(--hatch); }
+.lg-seg { background: var(--ely); border-color: var(--ely-ink); } .lg-stem { width: 2px; height: 14px; background: var(--ink); border: 0; } .lg-wait { background: var(--hatch); }
 .seg { position: absolute; box-sizing: border-box; border: 1px solid var(--ely-ink); background: var(--ely); cursor: pointer; will-change: transform; transition: filter .15s; }
 .seg:hover { filter: brightness(.9); }
 .seg.sel { background: var(--ely-ink); }
