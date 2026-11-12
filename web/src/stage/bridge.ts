@@ -26,7 +26,7 @@ export class BridgePanel {
     this.outEl = mk('withdrawals to HyperEVM', 'ely', 1200)
     this.outSub = at(h('div', { class: 'lbl', style: 'color:var(--ink-30)' }, ''), 1200 + 330, 62); this.root.append(this.outSub)
   }
-  setLastWithdrawal(ago: number | null) { this.outSub.textContent = ago === null ? 'none seen yet' : ago > 3600 ? `last one ${(ago / 3600).toFixed(1)} h ago` : `last one ${Math.round(ago / 60)} min ago` }
+  setLastWithdrawal(ago: number | null, day = 0) { this.outSub.textContent = ago === null ? 'none seen yet' : `${day.toLocaleString('en-US')} in 24 h · last ${ago > 3600 ? (ago / 3600).toFixed(1) + ' h' : Math.round(ago / 60) + ' min'} ago` }
   setCounts(c: { hype: number; retryable: number; other: number; withdrawals: number }) {
     const inN = c.hype + c.retryable + c.other
     for (const [k, el, to] of [['in', this.inEl, inN], ['out', this.outEl, c.withdrawals]] as const) {

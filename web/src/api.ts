@@ -22,6 +22,7 @@ export interface Snapshot {
   bridge: { deposits: BridgeMsg[]; withdrawals: Withdrawal[]; perHour: { hype: number; retryable: number; other: number; withdrawals: number } }
   delayedMessages: { lastHour: number }
   histogram: { minute: number; hype: number; retryable: number; other: number; withdrawals: number }[]
+  withdrawals24h: number
   health: Health
 }
 export type Net = 'mainnet' | 'testnet'

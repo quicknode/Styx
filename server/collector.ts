@@ -25,7 +25,7 @@ export class Collector extends EventEmitter {
   hist = new Map<number, { hype: number; retryable: number; other: number; withdrawals: number }>()
   private bump(t: number, k: 'hype' | 'retryable' | 'other' | 'withdrawals') {
     const m = Math.floor(t / 60); const e = this.hist.get(m) ?? { hype: 0, retryable: 0, other: 0, withdrawals: 0 }; e[k]++; this.hist.set(m, e)
-    if (this.hist.size > 1500) for (const key of [...this.hist.keys()].sort((a, b) => a - b).slice(0, this.hist.size - 1500)) this.hist.delete(key)
+    if (this.hist.size > 3000) for (const key of [...this.hist.keys()].sort((a, b) => a - b).slice(0, this.hist.size - 3000)) this.hist.delete(key)
   }
   histogram(minutes: number) {
     const nowM = Math.floor(Date.now() / 60000); const out: { minute: number; hype: number; retryable: number; other: number; withdrawals: number }[] = []
@@ -120,6 +120,17 @@ export class Collector extends EventEmitter {
       }
       console.log(`[collector] rollup deep backfill: ${this.assertions.size} assertions over 24 h`)
     } catch (e) { console.warn('[rollup deep backfill]', (e as Error).message) }
+    // Withdrawals execute in bursts after each confirmation, so an hour of zero is normal: look back 48 h on the Outbox.
+    try {
+      const wfrom = Math.max(1, this.l1Head - 172800)
+      for (let a = wfrom; a < to; a += 1000) {
+        const b = Math.min(a + 999, to - 1)
+        const logs = await this.fetchLogs(this.net.contracts.outbox, [TOPICS.OutBoxTransactionExecuted], a, b)
+        if (logs.length) { await this.ensureTimestamps([...new Set(logs.map((l) => hexToNum(l.blockNumber)))]); for (const l of logs) await this.handleLog(l, true) }
+      }
+      this.withdrawals.sort((x, y) => x.l1Time - y.l1Time)
+      console.log(`[collector] outbox deep backfill: ${this.withdrawals.length} withdrawals over 48 h`)
+    } catch (e) { console.warn('[outbox deep backfill]', (e as Error).message) }
   }
 
   // ---------- HyperEVM side ----------
@@ -231,7 +242,7 @@ export class Collector extends EventEmitter {
       if (!backfill) this.emitEvent({ type: 'deposit', msg })
     } else if (t0 === TOPICS.OutBoxTransactionExecuted) {
       const w: Withdrawal = { l1Block, l1Time, txHash: log.transactionHash }
-      this.withdrawals.push(w); if (this.withdrawals.length > 1000) this.withdrawals.splice(0, this.withdrawals.length - 1000)
+      this.withdrawals.push(w); if (this.withdrawals.length > 5000) this.withdrawals.splice(0, this.withdrawals.length - 5000)
       this.bump(l1Time, 'withdrawals')
       if (!backfill) this.emitEvent({ type: 'withdrawal', w })
     }
@@ -382,7 +393,8 @@ export class Collector extends EventEmitter {
         perHour: lh,
       },
       delayedMessages: { lastHour: this.delayed.filter((t) => now - t < 3600).length },
-      histogram: this.histogram(180),
+      histogram: this.histogram(1440),
+      withdrawals24h: this.withdrawals.filter((w) => now - w.l1Time < 86400).length,
       health: this.health(),
     }
   }

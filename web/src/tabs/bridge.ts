@@ -19,10 +19,12 @@ export function bridgeTab() {
   const kindChips: Record<Kind, HTMLButtonElement> = { hype: chip(KS.hype, 'on hl'), retryable: chip(KS.retryable, 'on amber'), other: chip(KS.other, 'on ely'), withdrawals: chip(KS.withdrawals, 'on') }
   ;(Object.keys(kindChips) as Kind[]).forEach((k) => { const c = kindChips[k]; c.setAttribute('aria-pressed', 'true'); c.addEventListener('click', () => { on[k] = !on[k]; c.classList.toggle('on', on[k]); c.setAttribute('aria-pressed', String(on[k])); draw(true) }); controls.append(c) })
   controls.append(h('span', { class: 'vsep', 'aria-hidden': 'true' }))
-  const w60 = chip('60 min', 'on win'); const w180 = chip('3 h', 'win'); w60.setAttribute('aria-pressed', 'true'); w180.setAttribute('aria-pressed', 'false')
-  w60.addEventListener('click', () => { windowMin = 60; w60.classList.add('on'); w180.classList.remove('on'); w60.setAttribute('aria-pressed', 'true'); w180.setAttribute('aria-pressed', 'false'); draw(true) })
-  w180.addEventListener('click', () => { windowMin = 180; w180.classList.add('on'); w60.classList.remove('on'); w180.setAttribute('aria-pressed', 'true'); w60.setAttribute('aria-pressed', 'false'); draw(true) })
-  controls.append(w60, w180)
+  const w60 = chip('60 min', 'on win'); const w180 = chip('3 h', 'win'); const w24 = chip('24 h', 'win'); w60.setAttribute('aria-pressed', 'true'); w180.setAttribute('aria-pressed', 'false')
+  w60.addEventListener('click', () => { windowMin = 60; w60.classList.add('on'); w180.classList.remove('on'); w60.setAttribute('aria-pressed', 'true'); w180.setAttribute('aria-pressed', 'false'); w24.classList.remove('on'); w24.setAttribute('aria-pressed', 'false'); draw(true) })
+  w180.addEventListener('click', () => { windowMin = 180; w180.classList.add('on'); w60.classList.remove('on'); w180.setAttribute('aria-pressed', 'true'); w60.setAttribute('aria-pressed', 'false'); w24.classList.remove('on'); w24.setAttribute('aria-pressed', 'false'); draw(true) })
+  w24.setAttribute('aria-pressed', 'false')
+  w24.addEventListener('click', () => { windowMin = 1440; for (const c of [w60, w180]) { c.classList.remove('on'); c.setAttribute('aria-pressed', 'false') } w24.classList.add('on'); w24.setAttribute('aria-pressed', 'true'); draw(true) })
+  controls.append(w60, w180, w24)
 
   const CH = ROW.heroH; const CW = 1776
   const chart = hero(el, CH); chart.setAttribute('role', 'img'); chart.setAttribute('aria-label', 'Bridge crossings per minute')
@@ -39,7 +41,10 @@ export function bridgeTab() {
   let sig = ''
   function draw(force = false) {
     const s = state.snapshot; if (!s) return
-    const hist = s.histogram.slice(-windowMin)
+    const raw = s.histogram.slice(-windowMin)
+    // 24 h view buckets by 15 minutes so bars stay readable
+    const B = windowMin >= 1440 ? 15 : 1
+    const hist = B === 1 ? raw : raw.reduce<typeof raw>((acc, m, i) => { if (i % B === 0) acc.push({ ...m }); else { const t = acc[acc.length - 1]; t.hype += m.hype; t.retryable += m.retryable; t.other += m.other; t.withdrawals += m.withdrawals } return acc }, [])
     const kinds = (Object.keys(on) as Kind[]).filter((k) => on[k])
     const nsig = `${windowMin}:${kinds.join('')}:${hist.map((m) => m.hype + m.retryable + m.other + m.withdrawals).join(',')}`
     if (!force && nsig === sig) { drawFeed(); return }
@@ -48,8 +53,8 @@ export function bridgeTab() {
     const max = Math.max(1, ...hist.map((m) => kinds.reduce((a, k) => a + m[k], 0)))
     bars.innerHTML = ''; axis.innerHTML = ''
     axis.append(svg('path', { class: 'hair2', d: `M 0 ${CH - 28} H ${CW}` }))
-    ;[0.5, 1].forEach((f) => { const y = CH - 28 - (CH - 60) * f; axis.append(svg('path', { class: 'hair', d: `M 0 ${y} H ${CW}` })); axis.append(txt(0, y - 6, Math.round(max * f).toLocaleString('en-US') + ' / min')) })
-    axis.append(txt(0, CH - 8, windowMin === 60 ? '−60 min' : '−3 h')); axis.append(txt(CW, CH - 8, 'now', '', 'end'))
+    ;[0.5, 1].forEach((f) => { const y = CH - 28 - (CH - 60) * f; axis.append(svg('path', { class: 'hair', d: `M 0 ${y} H ${CW}` })); axis.append(txt(0, y - 6, Math.round(max * f).toLocaleString('en-US') + (B === 1 ? ' / min' : ' / 15 min'))) })
+    axis.append(txt(0, CH - 8, windowMin === 60 ? '−60 min' : windowMin === 180 ? '−3 h' : '−24 h')); axis.append(txt(CW, CH - 8, 'now', '', 'end'))
     const bw = CW / hist.length
     const nextH = new Map<string, number>()
     hist.forEach((m, i) => {
@@ -60,7 +65,7 @@ export function bridgeTab() {
         const key = `${m.minute}:${k}`; nextH.set(key, hgt)
         const bar = at(h('div', { class: 'bar ' + KC[k] + (i === hist.length - 1 ? ' newest' : '') }), i * bw + 1, 0, Math.max(1, bw - 2), hgt)
         bar.style.top = ''; bar.style.bottom = (28 + y) + 'px'
-        tooltip(bar, () => `<b>${fmtTime(m.minute * 60)}</b><br>${kinds.map((kk) => `${KL[kk]}: ${m[kk]}`).join('<br>')}`)
+        tooltip(bar, () => `<b>${fmtTime(m.minute * 60)}${B > 1 ? ' +15 min' : ''}</b><br>${kinds.map((kk) => `${KL[kk]}: ${m[kk]}`).join('<br>')}`)
         bars.append(bar); y += hgt
         // quick and smooth: grow from the previous height for this minute, from zero for a new one
         const from = animate ? 0 : (prevH.get(key) ?? 0)
@@ -69,12 +74,12 @@ export function bridgeTab() {
     })
     prevH.clear(); for (const [k, v] of nextH) prevH.set(k, v)
     const sum = (k: Kind) => hist.reduce((a, m) => a + m[k], 0)
-    const win = windowMin === 60 ? 'last hour' : 'last 3 h'
+    const win = windowMin === 60 ? 'last hour' : windowMin === 180 ? 'last 3 h' : 'last 24 h'
     facts.set([
       { k: KL.hype, v: sum('hype').toLocaleString('en-US'), s: win, cls: 'hl' },
       { k: KL.retryable, v: sum('retryable').toLocaleString('en-US'), s: win },
       { k: KL.other, v: sum('other').toLocaleString('en-US'), s: win },
-      { k: KL.withdrawals, v: sum('withdrawals').toLocaleString('en-US'), s: 'execute after the challenge window' },
+      { k: KL.withdrawals, v: sum('withdrawals').toLocaleString('en-US'), s: windowMin >= 1440 ? 'arrive in bursts after each confirmation' : `${s.withdrawals24h.toLocaleString('en-US')} in the last 24 h · bursts after confirmations` },
     ])
     drawFeed()
   }
