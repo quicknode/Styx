@@ -3,11 +3,17 @@ import { h, at, layer, s as svg, txt } from '../dom'
 import { state } from '../state'
 import { chip, link, tooltip } from '../ui'
 import { titleRow, hero, Facts, ROW } from '../layout'
-import { fmtTime, short, type BridgeMsg, type Withdrawal } from '../api'
+import { fmtAge, fmtTime, short, type BridgeMsg, type Withdrawal } from '../api'
 
 type Kind = 'hype' | 'retryable' | 'other' | 'withdrawals'
 const KL: Record<Kind, string> = { hype: 'HYPE deposits', retryable: 'token deposits', other: 'messages', withdrawals: 'withdrawals' }
 const KS: Record<Kind, string> = { hype: 'HYPE', retryable: 'tokens', other: 'messages', withdrawals: 'withdrawals' }
+const KINFO: Record<Kind, string> = {
+  hype: '<b>HYPE deposits</b><br>Native HYPE sent from HyperEVM into Elysium, where it becomes gas. Bridge message kind 12. Credited on Elysium when the next batch includes it.',
+  retryable: '<b>Token deposits</b><br>ERC-20s locked in the HyperEVM gateway and minted 1:1 on Elysium, delivered as retryable tickets. Bridge message kind 9.',
+  other: '<b>Messages</b><br>Everything else crossing in: contract calls and bridge-level messages relayed from HyperEVM to Elysium. Bridge message kind 3.',
+  withdrawals: '<b>Withdrawals</b><br>Executed on HyperEVM from the Outbox. A withdrawal can only run after the state claim covering it is confirmed, so they arrive in bursts right after each confirmation.',
+}
 const KC: Record<Kind, string> = { hype: 'hl', retryable: 'amber', other: 'ely', withdrawals: 'ink' }
 
 /** Bridge: one stacked histogram, filters in the title row, four totals, and one line of the latest crossings. */
@@ -17,7 +23,7 @@ export function bridgeTab() {
   const on: Record<Kind, boolean> = { hype: true, retryable: true, other: true, withdrawals: true }
   let windowMin = 60
   const kindChips: Record<Kind, HTMLButtonElement> = { hype: chip(KS.hype, 'on hl'), retryable: chip(KS.retryable, 'on amber'), other: chip(KS.other, 'on ely'), withdrawals: chip(KS.withdrawals, 'on') }
-  ;(Object.keys(kindChips) as Kind[]).forEach((k) => { const c = kindChips[k]; c.setAttribute('aria-pressed', 'true'); c.addEventListener('click', () => { on[k] = !on[k]; c.classList.toggle('on', on[k]); c.setAttribute('aria-pressed', String(on[k])); draw(true) }); controls.append(c) })
+  ;(Object.keys(kindChips) as Kind[]).forEach((k) => { const c = kindChips[k]; c.setAttribute('aria-pressed', 'true'); tooltip(c, () => { const hs = state.snapshot?.histogram.slice(-windowMin) ?? []; const n = hs.reduce((a, m) => a + m[k], 0); return `${KINFO[k]}<br><span class="dim">${n.toLocaleString('en-US')} in this window · click to toggle</span>` }); c.addEventListener('click', () => { on[k] = !on[k]; c.classList.toggle('on', on[k]); c.setAttribute('aria-pressed', String(on[k])); draw(true) }); controls.append(c) })
   controls.append(h('span', { class: 'vsep', 'aria-hidden': 'true' }))
   const w60 = chip('60 min', 'on win'); const w180 = chip('3 h', 'win'); const w24 = chip('24 h', 'win'); w60.setAttribute('aria-pressed', 'true'); w180.setAttribute('aria-pressed', 'false')
   w60.addEventListener('click', () => { windowMin = 60; w60.classList.add('on'); w180.classList.remove('on'); w60.setAttribute('aria-pressed', 'true'); w180.setAttribute('aria-pressed', 'false'); w24.classList.remove('on'); w24.setAttribute('aria-pressed', 'false'); draw(true) })
@@ -79,7 +85,7 @@ export function bridgeTab() {
       { k: KL.hype, v: sum('hype').toLocaleString('en-US'), s: win, cls: 'hl' },
       { k: KL.retryable, v: sum('retryable').toLocaleString('en-US'), s: win },
       { k: KL.other, v: sum('other').toLocaleString('en-US'), s: win },
-      { k: KL.withdrawals, v: sum('withdrawals').toLocaleString('en-US'), s: windowMin >= 1440 ? 'arrive in bursts after each confirmation' : `${s.withdrawals24h.toLocaleString('en-US')} in the last 24 h · bursts after confirmations` },
+      { k: KL.withdrawals, v: sum('withdrawals').toLocaleString('en-US'), s: sum('withdrawals') ? (windowMin >= 1440 ? 'arrive in bursts after each confirmation' : `${s.withdrawals24h.toLocaleString('en-US')} in the last 24 h`) : (() => { const lastW = s.bridge.withdrawals.at(-1); const due = s.health.assertions.detail.match(/next due (in [^·]+|now)/)?.[1]; return `${lastW ? 'last burst ' + fmtAge(s.now - lastW.l1Time) + ' ago' : 'none yet'}${due ? ` · next after the claim ${due}` : ''}` })() },
     ])
     drawFeed()
   }
