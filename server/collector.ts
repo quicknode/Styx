@@ -135,6 +135,17 @@ export class Collector extends EventEmitter {
       }
       console.log(`[collector] rollup deep backfill: ${this.assertions.size} assertions over 24 h`)
     } catch (e) { console.warn('[rollup deep backfill]', (e as Error).message) }
+    // Batches: a full day so the Batches tab has a real series (mainnet posts one every 10-25 min).
+    try {
+      const bfrom = Math.max(1, this.l1Head - 86400); let n = 0
+      for (let a = bfrom; a < to; a += 1000) {
+        const b = Math.min(a + 999, to - 1)
+        const logs = await this.fetchLogs(this.net.contracts.sequencerInbox, [TOPICS.SequencerBatchDelivered], a, b)
+        if (logs.length) { await this.ensureTimestamps([...new Set(logs.map((l) => hexToNum(l.blockNumber)))]); for (const l of logs) await this.handleLog(l, true); n += logs.length }
+      }
+      const seqs = [...this.batches.keys()].sort((x, y) => y - x); this.detailQueue.push(...seqs); void this.drainDetail()
+      console.log(`[collector] sequencer deep backfill: ${n} batches over 24 h`)
+    } catch (e) { console.warn('[sequencer deep backfill]', (e as Error).message) }
     // Withdrawals execute in bursts after each confirmation, so an hour of zero is normal: look back 48 h on the Outbox.
     try {
       const wfrom = Math.max(1, this.l1Head - 172800)
@@ -442,7 +453,7 @@ export class Collector extends EventEmitter {
       now,
       elysium: { head, blockInterval: this.blockIntervalMs(), l1Lag, recentHeads: this.heads.slice(-60), unbatchedBlocks: this.unbatched(), unbatchedSeconds: this.unbatchedSeconds() },
       hyperevm: { head: this.l1Head, headTime: this.l1HeadTime },
-      batches: [...this.batches.values()].sort((a, b) => a.seq - b.seq).slice(-80),
+      batches: [...this.batches.values()].sort((a, b) => a.seq - b.seq).slice(-120),
       assertions: [...this.assertions.values()].sort((a, b) => (a.createdBlock ?? a.confirmedBlock ?? 0) - (b.createdBlock ?? b.confirmedBlock ?? 0)).slice(-40),
       bridge: {
         deposits, withdrawals: this.withdrawals.slice(-100),
