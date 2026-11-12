@@ -42,8 +42,8 @@ export function batchesTab() {
     list.forEach((b, i) => {
       const x0 = x(b.l2FirstBlock!), x1 = x(b.l2LastBlock! + 1); const w = Math.max(2, x1 - x0 - 2)
       const seg = at(h('div', { class: 'seg' + (i % 2 ? ' alt' : '') + (b.daMode === 'fulldata' ? ' full' : '') + (b.seq === state.selectedBatch ? ' sel' : ''), role: 'listitem', tabindex: '0', 'aria-label': `Batch ${b.seq}, ${b.l2Blocks} blocks` }), x0, BASE - SEG_H, w, SEG_H)
-      seg.append(h('span', { class: w > 56 ? 'segl' : 'segl vert' }, `#${b.seq}`))
-      if (w > 72) seg.append(h('span', { class: 'segn' }, b.l2Blocks!.toLocaleString('en-US')))
+      seg.append(h('span', { class: 'segl vert' }, `#${b.seq}`))
+      if (w > 30) seg.append(h('span', { class: 'segn vert' }, b.l2Blocks!.toLocaleString('en-US')))
       const open = () => selectBatch(b.seq)
       seg.addEventListener('click', open)
       seg.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open() } if (e.key === 'ArrowLeft') (seg.previousElementSibling as HTMLElement)?.focus(); if (e.key === 'ArrowRight') (seg.nextElementSibling as HTMLElement)?.focus() })

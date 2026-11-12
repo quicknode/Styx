@@ -380,7 +380,8 @@ svg text.ink { fill: var(--ink); } svg text.ely { fill: var(--ely-ink); } svg te
 .seg.sel .segn { color: var(--paper); }
 .seg.full { background: var(--amber-fill); border-color: var(--amber); }
 .seg.wait { background: var(--hatch); border-color: var(--rule-strong); cursor: default; }
-.segl.vert { writing-mode: vertical-rl; transform: rotate(180deg); left: 50%; top: 10px; margin-left: -7px; }
+.segl.vert { writing-mode: vertical-rl; transform: rotate(180deg); left: 50%; top: 10px; margin-left: -7px; font-size: 13px; }
+.segn.vert { writing-mode: vertical-rl; transform: rotate(180deg); left: 50%; margin-left: -6px; top: auto; bottom: 10px; }
 .segl { position: absolute; left: 6px; top: 8px; font-family: var(--mono); font-size: 12px; letter-spacing: .06em; color: var(--ely-deep); pointer-events: none; }
 .seg.sel .segl { color: var(--paper); }
 .stem { position: absolute; background: var(--ink); pointer-events: none; }
