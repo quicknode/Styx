@@ -33,7 +33,7 @@ export function assertionsTab() {
   })
   const facts = new Facts(el)
   const insp = new Inspector(el, facts)
-  const note = at(h('p', { class: 'home-next' }, ''), X0, ROW.facts + 124, CW); el.append(note)
+  const note = at(h('p', { class: 'home-next' }, ''), X0, ROW.facts + 236, CW); el.append(note)
 
   const tiles = new Map<string, HTMLElement>()
   const zoneOf = (a: Assertion, now: number, win: number): Zone => a.confirmedTime ? 'confirmed' : (a.createdTime && win && now - a.createdTime >= win) ? 'ready' : 'waiting'
@@ -107,26 +107,35 @@ export function assertionsTab() {
     ])
     note.textContent = 'A claim is the sequencer stating Elysium\'s state after a run of batches. Each tile fills as its challenge window elapses. Once full it is ready, and a validator confirms ready claims in lumps. Withdrawals execute only after the claim covering them is confirmed.'
   }
+  let shownHash = ''; let shownState = ''
   function drawInspector() {
     const s = state.snapshot; const a = s?.assertions.find((x) => x.hash === state.selectedAssertion); if (!s || !a) return
     const now = s.now; const win = s.health.assertions.confirmPeriod
-    insp.show(`claim ${short(a.hash)}`, (body) => {
+    // re-render only when the selection or its state changes; the 1 s ticker must not restart the entrance animation
+    const st = `${a.hash}:${a.confirmedTime ?? 0}:${Math.floor(now / 60)}`
+    if (insp.open && shownHash === a.hash && shownState === st) return
+    const rerender = insp.open && shownHash === a.hash
+    shownHash = a.hash; shownState = st
+    if (rerender) { const body = insp.body; body.innerHTML = ''; fill(body); return }
+    insp.show(`claim ${short(a.hash)}`, fill)
+    function fill(body: HTMLElement) {
+      const coarse = (sec: number) => sec < 3600 ? `${Math.max(1, Math.round(sec / 60))} min` : `${(sec / 3600).toFixed(1)} h`
       body.append(
-        ikv('posted', a.createdTime ? `${fmtAge(now - a.createdTime)} <em>ago</em>` : 'before <em>lookback</em>', a.createdTime ? fmtClock(a.createdTime) : 'older than 48 h'),
-        ikv('ready', a.createdTime && win ? (now > a.createdTime + win ? `since ${fmtAge(now - a.createdTime - win)} <em>ago</em>` : `in ${fmtAge(a.createdTime + win - now)}`) : '—', win ? `${fmtAge(win)} challenge window` : ''),
-        ikv('confirmed', a.confirmedTime ? `${fmtAge(now - a.confirmedTime)} <em>ago</em>` : '<em>not yet</em>', a.confirmedTime ? fmtClock(a.confirmedTime) + (a.createdTime ? ` · ${fmtAge(a.confirmedTime - a.createdTime)} after posting` : '') : 'waiting for a validator'),
+        ikv('posted', a.createdTime ? `${coarse(now - a.createdTime)} <em>ago</em>` : 'before <em>lookback</em>', a.createdTime ? fmtClock(a.createdTime) : 'older than 48 h'),
+        ikv('ready', a.createdTime && win ? (now > a.createdTime + win ? `${coarse(now - a.createdTime - win)} <em>ago</em>` : `in ${coarse(a.createdTime + win - now)}`) : '—', win ? `${fmtAge(win)} challenge window` : ''),
+        ikv('confirmed', a.confirmedTime ? `${coarse(now - a.confirmedTime)} <em>ago</em>` : '<em>not yet</em>', a.confirmedTime ? fmtClock(a.confirmedTime) + (a.createdTime ? ` · ${coarse(a.confirmedTime - a.createdTime)} after posting` : '') : 'waiting for a validator'),
         ikv('on hyperevm', `<span style="font-family:var(--mono);font-size:24px">${a.confirmedBlock ? 'block ' + a.confirmedBlock.toLocaleString('en-US') : a.createdBlock ? 'block ' + a.createdBlock.toLocaleString('en-US') : '—'}</span>`, ' '),
       )
       const l = body.lastElementChild!.querySelector('.s')!
       if (a.createTx) l.append(link(`${s.network.explorer.hyperevm}/tx/${a.createTx}`, 'post tx'))
       if (a.confirmTx) l.append(link(`${s.network.explorer.hyperevm}/tx/${a.confirmTx}`, 'confirm tx'))
       l.append(copyBtn(a.hash))
-    })
+    }
     for (const [hash, t] of tiles) t.classList.toggle('sel', hash === a.hash)
   }
   state.onSnapshot.on(() => { if (el.style.display !== 'none') draw() })
   state.onSelectAssertion.on((hsh) => { if (el.style.display === 'none') return; if (hsh === null) insp.hide(); else drawInspector() })
-  state.onNet.on(() => { for (const t of tiles.values()) t.remove(); tiles.clear(); insp.hide() })
+  state.onNet.on(() => { for (const t of tiles.values()) t.remove(); tiles.clear(); shownHash = ''; insp.hide() })
   // keep the fills and ages live between snapshots
   setInterval(() => { if (el.style.display !== 'none' && state.snapshot) { state.snapshot.now = Math.floor(Date.now() / 1000); draw() } }, 1000)
   return { el, onShow: () => draw() }
