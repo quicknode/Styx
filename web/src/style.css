@@ -345,6 +345,9 @@ svg text.ink { fill: var(--ink); } svg text.ely { fill: var(--ely-ink); } svg te
 
 /* ---------- motion polish ---------- */
 .col { position: absolute; transform-origin: bottom; will-change: transform; }
+.col.building { animation: building 1.2s ease-in-out infinite; }
+.col.building::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 100%; outline: 1.5px dashed var(--ink); outline-offset: 2px; pointer-events: none; }
+@keyframes building { 50% { opacity: .45; } }
 .chart-guide { position: absolute; top: 0; bottom: 28px; width: 1px; background: var(--ink); opacity: 0; pointer-events: none; transition: opacity .15s; }
 .bar.newest { box-shadow: 0 0 0 1px var(--paper) inset; }
 .trk-pending { fill: none; stroke: var(--ely-ink); stroke-width: 2; stroke-dasharray: 6 8; animation: march 1s linear infinite; opacity: .6; }

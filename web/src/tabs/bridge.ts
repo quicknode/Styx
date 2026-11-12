@@ -60,12 +60,20 @@ export function bridgeTab() {
     bars.innerHTML = ''; axis.innerHTML = ''
     axis.append(svg('path', { class: 'hair2', d: `M 0 ${CH - 28} H ${CW}` }))
     ;[0.5, 1].forEach((f) => { const y = CH - 28 - (CH - 60) * f; axis.append(svg('path', { class: 'hair', d: `M 0 ${y} H ${CW}` })); axis.append(txt(0, y - 6, Math.round(max * f).toLocaleString('en-US') + (B === 1 ? ' / min' : ' / 15 min'))) })
-    axis.append(txt(0, CH - 8, windowMin === 60 ? '−60 min' : windowMin === 180 ? '−3 h' : '−24 h')); axis.append(txt(CW, CH - 8, 'now', '', 'end'))
+    // time markers: a tick and clock time every 10 min (60 min), 30 min (3 h), or 4 h (24 h)
+    const stepMin = windowMin === 60 ? 10 : windowMin === 180 ? 30 : 240
+    const firstMin = hist[0].minute; const bwRaw = CW / hist.length
+    for (let m = Math.ceil(firstMin / stepMin) * stepMin; m <= hist.at(-1)!.minute; m += stepMin) {
+      const x = ((m - firstMin) / B) * bwRaw
+      axis.append(svg('path', { class: 'hair2', d: `M ${x} ${CH - 28} V ${CH - 20}` }))
+      axis.append(txt(x, CH - 6, fmtTime(m * 60).slice(0, 5), '', 'middle'))
+    }
+    axis.append(txt(CW, CH - 6, 'now', 'ink', 'end'))
     const bw = CW / hist.length
     const nextH = new Map<string, number>()
     hist.forEach((m, i) => {
       // one column per bucket: segments stack inside it, and the column itself scales up from the baseline
-      const col = at(h('div', { class: 'col' }), i * bw + 1, 0, Math.max(1, bw - 2), CH - 28)
+      const col = at(h('div', { class: 'col' + (i === hist.length - 1 ? ' building' : '') }), i * bw + 1, 0, Math.max(1, bw - 2), CH - 28)
       col.style.top = ''; col.style.bottom = '28px'
       let y = 0; let total = 0; let changed = false
       for (const k of kinds) {
