@@ -60,7 +60,7 @@ export class Inspector {
   body: HTMLElement
   titleEl: HTMLElement
   open = false
-  constructor(root: HTMLElement, private facts: Facts, y = ROW.facts, height = 170) {
+  constructor(private root: HTMLElement, private facts: Facts, y = ROW.facts, height = 170) {
     this.el = at(h('div', { class: 'inspector', role: 'region', 'aria-live': 'polite', tabindex: '-1' }), G.x(1), y, STAGE_W, height + 20)
     this.titleEl = h('div', { class: 'ititle' })
     const close = h('button', { class: 'iclose', type: 'button', 'aria-label': 'Close details' }, '× close  esc')
@@ -82,6 +82,9 @@ export class Inspector {
     if (!this.open) return
     this.open = false; this.el.style.pointerEvents = 'none'
     gsap.to(this.el, { opacity: 0, y: 8, duration: .25 }); this.facts.show(true)
+    // the clicked tile keeps focus, and a key press would switch it to the focus ring; drop it
+    const ae = document.activeElement as HTMLElement | null
+    if (ae && this.root.contains(ae) && ae.tagName !== 'INPUT') ae.blur()
     this.onHide?.()
   }
 }
