@@ -9,7 +9,7 @@ export class Tabs {
   bar: HTMLElement
   ink: HTMLElement
   constructor(bar: HTMLElement, private host: HTMLElement) {
-    this.bar = bar
+    this.bar = bar; bar.setAttribute('role', 'tablist')
     this.ink = h('div', { class: 'tab-ink' }); bar.append(this.ink)
     addEventListener('hashchange', () => this.show(this.fromHash(), false))
     addEventListener('keydown', (e) => {
@@ -19,8 +19,8 @@ export class Tabs {
   }
   add(t: Tab) {
     this.tabs.push(t)
-    t.el.classList.add('tabpane'); t.el.style.display = 'none'; this.host.append(t.el)
-    const b = h('button', { class: 'tab', type: 'button', 'data-id': t.id, html: `${t.label}<span class="tk">${t.key}</span>` })
+    t.el.classList.add('tabpane'); t.el.id = `pane-${t.id}`; t.el.setAttribute('role', 'tabpanel'); t.el.style.display = 'none'; this.host.append(t.el)
+    const b = h('button', { class: 'tab', type: 'button', role: 'tab', 'aria-selected': 'false', 'aria-controls': `pane-${t.id}`, 'data-id': t.id, html: `${t.label}<span class="tk" aria-hidden="true">${t.key}</span>` })
     b.addEventListener('click', () => this.show(t.id))
     this.bar.insertBefore(b, this.ink)
     return t
@@ -31,7 +31,7 @@ export class Tabs {
     const prev = this.current
     this.current = t
     if (pushHash) { const net = location.hash.match(/net=(mainnet|testnet)/)?.[1]; location.hash = `tab=${t.id}${net ? `&net=${net}` : ''}` }
-    for (const b of Array.from(this.bar.querySelectorAll('.tab'))) b.classList.toggle('on', (b as HTMLElement).dataset.id === t.id)
+    for (const b of Array.from(this.bar.querySelectorAll('.tab'))) { const on = (b as HTMLElement).dataset.id === t.id; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)) }
     const btn = this.bar.querySelector(`.tab[data-id="${t.id}"]`) as HTMLElement
     gsap.to(this.ink, { left: btn.offsetLeft, width: btn.offsetWidth, duration: .45, ease: 'power3.out' })
     if (prev) { prev.onHide?.(); gsap.to(prev.el, { opacity: 0, y: -8, duration: .2, onComplete: () => { prev.el.style.display = 'none' } }) }

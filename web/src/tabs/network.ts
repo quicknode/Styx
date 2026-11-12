@@ -1,48 +1,36 @@
 import { h, at, G } from '../dom'
 import { state } from '../state'
-import { copyBtn, link, row, enter } from '../ui'
+import { copyBtn, link } from '../ui'
+import { titleRow, Facts, ROW } from '../layout'
 import { fmtAge } from '../api'
 
-const DESC: Record<string, string> = {
-  rollup: 'The rollup: configuration and confirmed state. Emits assertion events.',
-  sequencerInbox: 'Receives batches from the sequencer. Emits SequencerBatchDelivered.',
-  bridge: 'Holds bridged HYPE and records every message between the chains.',
-  inbox: 'Where deposits and messages from HyperEVM to Elysium are submitted.',
-  outbox: 'Executes withdrawals on HyperEVM once their assertion is confirmed.',
-}
+const NAME: Record<string, string> = { rollup: 'Rollup', sequencerInbox: 'Sequencer inbox', bridge: 'Bridge', inbox: 'Inbox', outbox: 'Outbox' }
+const WHAT: Record<string, string> = { rollup: 'assertions', sequencerInbox: 'batches', bridge: 'deposits', inbox: 'messages in', outbox: 'withdrawals' }
 
-/** Network: chain facts, the contracts this monitor reads, and exactly how each health light is computed. */
+/** Network: four facts and the five contracts this monitor reads, nothing else. */
 export function networkTab() {
   const el = h('div')
-  el.append(at(h('div', { class: 'h2', html: 'What this monitor <em>reads</em>, and how it judges.' }), G.x(1), 16))
-  const facts = at(h('div', { style: 'position:absolute;display:flex;gap:48px' }), G.x(1), 86); el.append(facts)
-  const widths = [230, 520, 440]
-  const table = at(h('div', { class: 'table' }), G.x(1), 220, G.w(8)); el.append(table)
-  const head = h('div', { class: 'th' }); ['contract', 'address on hyperevm', 'role'].forEach((t, i) => head.append(h('div', { class: 'td', style: `width:${widths[i]}px` }, t))); table.append(head)
-  const body = h('div'); table.append(body)
-  const rules = at(h('div', { class: 'panel' }, [h('span', { class: 'panel-title' }, 'How the health strip decides')]), G.x(10), 220, G.w(3), 420); el.append(rules)
-  const rulesBody = h('div', { class: 'prose', style: 'position:absolute;left:28px;right:28px;top:32px;font-size:16px;line-height:1.55' }); rules.append(rulesBody)
-  const foot = at(h('div', { class: 'prose', style: 'font-size:16px;width:' + G.w(8) + 'px;color:var(--ink-50)' }, ''), G.x(1), 560); el.append(foot)
-
+  titleRow(el, 'Read from the <em>contracts</em>, nothing self-reported.')
+  const facts = new Facts(el, ROW.hero + 8)
+  const list = at(h('ul', { class: 'contracts', 'aria-label': 'Rollup contracts on HyperEVM' }), G.x(1), ROW.hero + 150, G.w(12)); el.append(list)
+  const foot = at(h('p', { class: 'foot' }), G.x(1), ROW.hero + 150 + 5 * 56 + 32, G.w(12)); el.append(foot)
   function draw() {
     const s = state.snapshot; if (!s) return
-    facts.innerHTML = ''
-    const kv = (k: string, v: string, sub = '') => facts.append(h('div', { class: 'kv', style: 'position:relative' }, [h('div', { class: 'k' }, k), h('div', { class: 'v', html: v }), ...(sub ? [h('div', { class: 's' }, sub)] : [])]))
-    kv('network', `Elysium <em>${s.network.name}</em>`, `chain id ${s.network.elysiumChainId}`)
-    kv('settles to', 'HyperEVM', `chain id ${s.network.hyperevmChainId}`)
-    kv('block interval', `${Math.round(s.elysium.blockInterval)} <em>ms</em>`, 'last 120 heads')
-    kv('batch cadence', `every ${fmtAge(s.health.batches.medianInterval)}`, 'median of the last 12')
-    enter(facts.children, .05)
-    body.innerHTML = ''
+    facts.set([
+      { k: 'network', v: `Elysium <em>${s.network.name}</em>`, s: `chain ${s.network.elysiumChainId} · settles to HyperEVM ${s.network.hyperevmChainId}` },
+      { k: 'block interval', v: `${Math.round(s.elysium.blockInterval)} <em>ms</em>`, s: 'measured over the last 120 heads' },
+      { k: 'batch cadence', v: `every ${fmtAge(s.health.batches.medianInterval)}`, s: 'median of the last 12' },
+      { k: 'parent lag', v: `${s.elysium.l1Lag} <em>blocks</em>`, s: 'HyperEVM head minus what Elysium has seen' },
+    ])
+    list.innerHTML = ''
     for (const [k, addr] of Object.entries(s.network.contracts)) {
-      const r = row([k.replace(/([A-Z])/g, ' $1').toLowerCase(), '', (DESC[k] ?? '').split('.')[0]], widths)
-      r.children[1].append(link(`${s.network.explorer.hyperevm}/address/${addr}`, addr), copyBtn(addr)); r.children[1].classList.add('mono'); r.children[2].classList.add('dim')
-      body.append(r)
+      const li = h('li', { class: 'contract' }, [
+        h('span', { class: 'cn' }, NAME[k] ?? k), h('span', { class: 'cw' }, WHAT[k] ?? ''),
+        h('span', { class: 'ca' }, [link(`${s.network.explorer.hyperevm}/address/${addr}`, addr), copyBtn(addr)]),
+      ])
+      list.append(li)
     }
-    enter(body.children, .04)
-    const hh = s.health
-    rulesBody.innerHTML = `<b>Sequencer</b>: newest block under 4 s old.<br><br><b>Batches</b>: last batch younger than twice the usual gap (${fmtAge(hh.batches.medianInterval)} now).<br><br><b>Data</b>: payload byte <code>0x88</code> means an AnyTrust certificate. Full data means the committee fell back.<br><br><b>Assertions</b>: last confirmation younger than twice the usual creation gap.<br><br>Nothing is self-reported.`
-    foot.innerHTML = `Built on Elysium. Not affiliated with or endorsed by Kinetiq or Hyperliquid. Contract addresses from <a class="lnk" target="_blank" rel="noopener" href="https://elysium.kinetiq.xyz/docs/contract-addresses">Kinetiq's contract-addresses page</a>. Explorers: <a class="lnk" target="_blank" rel="noopener" href="${s.network.explorer.elysium}">Elysium</a> · <a class="lnk" target="_blank" rel="noopener" href="${s.network.explorer.hyperevm}">HyperEVM</a>.`
+    foot.innerHTML = `Built on Elysium. Not affiliated with or endorsed by Kinetiq or Hyperliquid. Addresses from <a class="lnk" target="_blank" rel="noopener" href="https://elysium.kinetiq.xyz/docs/contract-addresses">Kinetiq's contract list</a>. How each health light decides is explained in its tooltip.`
   }
   state.onSnapshot.on(() => { if (el.style.display !== 'none') draw() })
   return { el, onShow: draw }

@@ -1,5 +1,6 @@
 import gsap from 'gsap'
 import { h } from '../dom'
+import { tooltip } from '../ui'
 import type { Health, HealthState } from '../api'
 
 const ITEMS: { key: keyof Omit<Health, 'sentence'>; label: string; value: (hh: Health) => string }[] = [
@@ -9,14 +10,22 @@ const ITEMS: { key: keyof Omit<Health, 'sentence'>; label: string; value: (hh: H
   { key: 'assertions', label: 'Assertions', value: (x) => x.assertions.state === 'live' ? 'Confirming <em>on time</em>' : x.assertions.state === 'pending' ? 'Confirmation <em>overdue</em>' : x.assertions.state === 'failure' ? 'Confirmations <em>stalled</em>' : 'Waiting' },
 ]
 
+const RULE: Record<string, string> = {
+  sequencer: '<b>Live</b> while the newest Elysium block is under 4 s old.<br>Pending under 20 s. Failure beyond.',
+  batches: '<b>Live</b> while the last batch is younger than twice the usual gap.<br>Pending under four times.',
+  data: 'Reads the first byte of each batch payload.<br><b>0x88</b> is an AnyTrust certificate. Full data means the committee fell back.',
+  assertions: '<b>Live</b> while the last confirmation is younger than twice the usual creation gap, floored at one hour.',
+}
 export class HealthStrip {
   els = new Map<string, { root: HTMLElement; v: HTMLElement; d: HTMLElement; state: HealthState | 'unknown' }>()
   constructor(root: HTMLElement, onClick?: (key: string) => void) {
     for (const it of ITEMS) {
       const v = h('div', { class: 'v', html: 'Waiting' })
       const d = h('div', { class: 'd' }, '—')
-      const el = h('div', { class: 'hp' }, [h('div', { class: 'k' }, [h('span', { class: 'dot' }), it.label]), v, d])
+      const el = h('div', { class: 'hp', role: 'button', tabindex: '0', 'aria-label': it.label }, [h('div', { class: 'k' }, [h('span', { class: 'dot', 'aria-hidden': 'true' }), it.label]), v, d])
       el.addEventListener('click', () => onClick?.(it.key))
+      el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(it.key) } })
+      tooltip(el, () => RULE[it.key])
       root.append(el)
       this.els.set(it.key, { root: el, v, d, state: 'unknown' })
     }

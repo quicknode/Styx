@@ -8,18 +8,18 @@ export class BridgePanel {
   inEl: HTMLElement; outEl: HTMLElement
   shown = { in: 0, out: 0 }
   field: HTMLElement
-  X = G.x(1); Y = 556; W = G.w(12); H = 84
+  X = G.x(1); Y = 440; W = G.w(12); H = 96
   constructor(stage: HTMLElement) {
     this.root = at(h('div', { class: 'panel' }, [h('span', { class: 'panel-title' }, 'Bridge · last hour')]), this.X, this.Y, this.W, this.H)
     stage.append(this.root)
     const svg = layer(this.W, this.H); this.root.append(svg)
-    const top = s('path', { class: 'ln ely', d: `M 32 22 H 700` }); const bot = s('path', { class: 'ln hl', d: `M 32 ${this.H - 20} H 700` })
-    svg.append(top, bot, txt(32, 14, 'Elysium', 'ely'), txt(32, this.H - 26, 'HyperEVM', 'hl'))
+    const top = s('path', { class: 'ln ely', d: `M 32 30 H 700` }); const bot = s('path', { class: 'ln hl', d: `M 32 ${this.H - 22} H 700` })
+    svg.append(top, bot, txt(32, 22, 'Elysium', 'ely'), txt(32, this.H - 28, 'HyperEVM', 'hl'))
     for (const p of [top, bot]) { prepDraw(p); gsap.to(p, { strokeDashoffset: 0, duration: 1, ease: 'power2.out', delay: .6 }) }
     this.field = at(h('div', { style: 'position:absolute;left:0;top:0;width:720px;height:100%;overflow:hidden' }), 0, 0); this.root.append(this.field)
     const mk = (label: string, cls: string, x: number) => {
-      const v = h('div', { class: 'num ' + cls }, '0'); at(v, x, 16)
-      const l = h('div', { class: 'lbl' }, label); at(l, x, 56)
+      const v = h('div', { class: 'num ' + cls }, '0'); at(v, x, 22)
+      const l = h('div', { class: 'lbl' }, label); at(l, x, 62)
       this.root.append(v, l); return v
     }
     this.inEl = mk('deposits into Elysium', 'hl', 800)
@@ -44,6 +44,6 @@ export class BridgePanel {
       .to(coin, { scale: 0, opacity: 0, duration: .25 })
     gsap.fromTo(target, { scale: 1.1 }, { scale: 1, duration: .5, ease: 'back.out(2)' })
   }
-  deposit(m: BridgeMsg) { this.fly(m.kind === 12 ? '' : 'rt', this.H - 20, 22, this.inEl) }
-  withdrawal(_w: Withdrawal) { this.fly('out', 22, this.H - 20, this.outEl) }
+  deposit(m: BridgeMsg) { this.fly(m.kind === 12 ? '' : 'rt', this.H - 22, 30, this.inEl) }
+  withdrawal(_w: Withdrawal) { this.fly('out', 30, this.H - 22, this.outEl) }
 }

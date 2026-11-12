@@ -61,12 +61,8 @@ export class Lanes {
     const conn = s('path', { class: 'hair2 dash', d: `M ${cx} ${this.EY + 40} V ${this.L1Y - 40}` }); this.svg.append(conn)
     this.svg.append(txt(cx + 14, (this.EY + this.L1Y) / 2 + 5, 'certificate → calldata', ''))
 
-    // assertion row
-    this.asrtRow = at(h('div', { style: 'position:absolute' }), this.X, 432, this.W, 90); this.root.append(this.asrtRow)
-    const rowRule = s('path', { class: 'hair', d: `M ${this.X} 452 H ${this.X + this.W}` }); this.svg.append(rowRule)
-    this.svg.append(txt(this.X, 444, 'Assertions on HyperEVM · ○ created · ● confirmed', ''))
-
-    for (const p of [conn, rowRule]) { prepDraw(p as SVGGeometryElement); gsap.to(p, { strokeDashoffset: 0, duration: 1.2, ease: 'power2.out', delay: .4 }) }
+    this.asrtRow = h('div')
+    for (const p of [conn]) { prepDraw(p as SVGGeometryElement); gsap.to(p, { strokeDashoffset: 0, duration: 1.2, ease: 'power2.out', delay: .4 }) }
     gsap.from([elyPanel, l1Panel], { opacity: 0, y: 14, duration: .9, stagger: .15, ease: 'power3.out' })
 
     gsap.ticker.add(this.tick)
@@ -127,8 +123,7 @@ export class Lanes {
   private updateWaiting() {
     if (!this.unbatchedBlocks) { this.openBlocks.textContent = ''; return }
     const behind = this.unbatchedSeconds >= 120 ? `${Math.round(this.unbatchedSeconds / 60)} min behind head` : `${Math.round(this.unbatchedSeconds)} s behind head`
-    this.openBlocks.innerHTML = `${this.unbatchedBlocks.toLocaleString('en-US')} blocks waiting<br>${behind}`
-    this.openBlocks.style.lineHeight = '22px'
+    this.openBlocks.textContent = `${this.unbatchedBlocks.toLocaleString('en-US')} waiting · ${behind}`
     this.openBlocks.className = 'lbl ' + (this.unbatchedSeconds > 900 ? 'amber' : '')
   }
   setOpen(lastBatch: Batch | undefined, _head: Head | null, now: number) {
@@ -181,7 +176,10 @@ export class Lanes {
     gsap.fromTo(m, { opacity: 0, scale: 1.8 }, { opacity: 1, scale: 1, duration: .6, ease: 'back.out(2)' })
     this.renderAssertions()
   }
-  renderAssertions() {
+  renderAssertions() { return
+    // kept for API compatibility; the Live tab no longer shows the row
+  }
+  private _renderAssertionsOld() {
     this.asrtRow.innerHTML = ''
     const now = Math.floor(Date.now() / 1000)
     const list = this.assertions.filter((a) => a.createdTime || a.confirmedTime).slice(-3)

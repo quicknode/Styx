@@ -23,6 +23,7 @@ const title = document.getElementById('title')!
 
 const tabs = new Tabs(document.getElementById('tabs')!, stage)
 const health = new HealthStrip(document.getElementById('health')!, (k) => tabs.show(k === 'sequencer' ? 'live' : k === 'data' ? 'batches' : k))
+document.getElementById('netswitch')!.setAttribute('role', 'group'); document.getElementById('netswitch')!.setAttribute('aria-label', 'Network')
 const live = liveTab((id) => tabs.show(id))
 const batches = batchesTab(); const asserts = assertionsTab(); const bridge = bridgeTab(); const track = trackTab(); const network = networkTab()
 tabs.add({ id: 'live', label: 'Live', key: '1', el: live.el })
