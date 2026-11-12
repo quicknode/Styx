@@ -8,7 +8,7 @@ import { fmtTime, short, type BridgeMsg, type Withdrawal } from '../api'
 type Kind = 'hype' | 'retryable' | 'other' | 'withdrawals'
 const KL: Record<Kind, string> = { hype: 'HYPE deposits', retryable: 'token deposits', other: 'messages', withdrawals: 'withdrawals' }
 const KS: Record<Kind, string> = { hype: 'HYPE', retryable: 'tokens', other: 'messages', withdrawals: 'withdrawals' }
-const KC: Record<Kind, string> = { hype: 'hl', retryable: 'paper', other: 'ely', withdrawals: 'ely-ink' }
+const KC: Record<Kind, string> = { hype: 'hl', retryable: 'paper', other: 'ely', withdrawals: 'hatch' }
 
 /** Bridge: one stacked histogram, filters in the title row, four totals, and one line of the latest crossings. */
 export function bridgeTab() {
@@ -16,7 +16,7 @@ export function bridgeTab() {
   const { controls } = titleRow(el, 'Crossings, <em>per minute</em>.')
   const on: Record<Kind, boolean> = { hype: true, retryable: true, other: true, withdrawals: true }
   let windowMin = 60
-  const kindChips: Record<Kind, HTMLButtonElement> = { hype: chip(KS.hype, 'on hl'), retryable: chip(KS.retryable, 'on'), other: chip(KS.other, 'on ely'), withdrawals: chip(KS.withdrawals, 'on ely') }
+  const kindChips: Record<Kind, HTMLButtonElement> = { hype: chip(KS.hype, 'on hl'), retryable: chip(KS.retryable, 'on'), other: chip(KS.other, 'on ely'), withdrawals: chip(KS.withdrawals, 'on') }
   ;(Object.keys(kindChips) as Kind[]).forEach((k) => { const c = kindChips[k]; c.setAttribute('aria-pressed', 'true'); c.addEventListener('click', () => { on[k] = !on[k]; c.classList.toggle('on', on[k]); c.setAttribute('aria-pressed', String(on[k])); draw(true) }); controls.append(c) })
   controls.append(h('span', { class: 'vsep', 'aria-hidden': 'true' }))
   const w60 = chip('60 min', 'on'); const w180 = chip('3 h', ''); w60.setAttribute('aria-pressed', 'true'); w180.setAttribute('aria-pressed', 'false')
