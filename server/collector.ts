@@ -49,7 +49,6 @@ export class Collector extends EventEmitter {
   }
   private tsCache = new Map<number, number>()
   private lastProcessedL1 = 0
-  private ws?: WebSocket
   private detailQueue: number[] = []
   private detailBusy = false
   ready = false
@@ -66,7 +65,13 @@ export class Collector extends EventEmitter {
     this.l1Head = await this.l1.blockNumber()
     const from = Math.max(1, this.l1Head - this.backfillBlocks)
     console.log(`[collector] ${this.net.name}: backfilling HyperEVM ${from}..${this.l1Head}`)
-    await this.ingestRange(from, this.l1Head, true)
+    for (let attempt = 1; ; attempt++) {
+      try { await this.ingestRange(from, this.l1Head, true); break } catch (e) {
+        console.warn(`[collector] ${this.net.name}: backfill attempt ${attempt} failed: ${(e as Error).message}`)
+        if (attempt >= 5) throw e
+        await sleep(2000 * attempt)
+      }
+    }
     this.lastProcessedL1 = this.l1Head
     this.ready = true
     console.log(`[collector] backfill done: ${this.batches.size} batches, ${this.assertions.size} assertions, ${this.deposits.length} deposits, ${this.withdrawals.length} withdrawals`)
@@ -236,32 +241,28 @@ export class Collector extends EventEmitter {
   }
 
   // ---------- Elysium side ----------
+  private ws?: WebSocket
+  private connecting = false
+  private lastHeadAt = 0
   private connectHeads() {
-    let gotMessage = false
-    try {
-      const ws = new WebSocket(this.net.elysiumWs)
-      this.ws = ws
-      ws.on('open', () => ws.send(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_subscribe', params: ['newHeads'] })))
-      ws.on('message', (buf) => {
-        const m = JSON.parse(buf.toString())
-        const h = m?.params?.result
-        if (!h) return
-        gotMessage = true
-        this.pushHead(h)
-      })
-      ws.on('close', () => { console.warn('[l2 ws] closed, reconnecting'); setTimeout(() => this.connectHeads(), 1500) })
-      ws.on('error', (e) => { console.warn('[l2 ws]', e.message); ws.close() })
-      setTimeout(() => { if (!gotMessage) { console.warn('[l2 ws] no heads in 8s, polling as well'); void this.pollHeads() } }, 8000)
-    } catch (e) { console.warn('[l2 ws] failed, polling', (e as Error).message); void this.pollHeads() }
+    if (this.connecting) return
+    this.connecting = true
+    try { this.ws?.terminate() } catch { /* ignore */ }
+    const ws = new WebSocket(this.net.elysiumWs)
+    this.ws = ws
+    ws.on('open', () => { this.connecting = false; ws.send(JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_subscribe', params: ['newHeads'] })) })
+    ws.on('message', (buf) => { const m = JSON.parse(buf.toString()); const h = m?.params?.result; if (h) { this.lastHeadAt = Date.now(); this.pushHead(h) } })
+    ws.on('close', () => { this.connecting = false; if (this.ws === ws) setTimeout(() => this.connectHeads(), 800) })
+    ws.on('error', (e) => { console.warn('[l2 ws]', e.message); try { ws.close() } catch { /* ignore */ } })
+    if (!this.watchdog) this.watchdog = setInterval(() => this.checkHeads(), 1000)
   }
-  private polling = false
-  private async pollHeads() {
-    if (this.polling) return
-    this.polling = true
-    for (;;) {
-      try { const b = await this.l2.getBlock('latest'); if (!this.heads.length || hexToNum(b.number) > this.heads[this.heads.length - 1].number) this.pushHead(b) } catch (e) { /* ignore */ }
-      await sleep(250)
-    }
+  private watchdog?: NodeJS.Timeout
+  /** If heads stop for 3 s, poll once to keep the UI honest and force a fresh socket. */
+  private async checkHeads() {
+    const stale = Date.now() - this.lastHeadAt
+    if (stale < 3000) return
+    try { const b = await this.l2.getBlock('latest'); this.pushHead(b) } catch { /* ignore */ }
+    if (stale > 5000 && !this.connecting) { console.warn('[l2 ws] heads stale, reconnecting'); this.connectHeads() }
   }
   private pushHead(h: any) {
     const head: Head = { number: hexToNum(h.number), timestamp: hexToNum(h.timestamp), receivedAt: Date.now(), l1BlockNumber: h.l1BlockNumber ? hexToNum(h.l1BlockNumber) : 0 }
