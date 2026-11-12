@@ -1,80 +1,94 @@
 import gsap from 'gsap'
-import { h, at, layer, s as svg, txt } from '../dom'
+import { h, at } from '../dom'
 import { state, selectAssertion } from '../state'
 import { copyBtn, link, tooltip } from '../ui'
-import { titleRow, hero, Facts, Inspector, ikv, ROW } from '../layout'
+import { titleRow, Facts, Inspector, ikv, ROW } from '../layout'
 import { fmtAge, fmtClock, fmtTime, short, type Assertion } from '../api'
 
+type Zone = 'waiting' | 'ready' | 'confirmed'
+const ZONES: { id: Zone; title: string; sub: string }[] = [
+  { id: 'waiting', title: 'In the window', sub: 'posted, challenge window running' },
+  { id: 'ready', title: 'Ready', sub: 'window passed, waiting for a validator' },
+  { id: 'confirmed', title: 'Confirmed', sub: 'final on HyperEVM' },
+]
+
 /**
- * Assertions as a staircase. One row per claim, newest at the bottom, 48 h of time across.
- * A bar runs from the moment a claim was posted to the moment it was confirmed. Open claims are
- * hatched up to now, with a faint line to the end of their window, and turn amber once past it.
+ * Claims as a queue. Each claim is a tile. It enters on the left when posted, fills up as its
+ * 24 h window elapses, moves to the middle once it is eligible, and slides to the right when a
+ * validator confirms it. Tiles keep their identity, so every state change is an animation.
  */
 export function assertionsTab() {
   const el = h('div')
   titleRow(el, 'State claims, <em>posted then confirmed</em>.')
-  const legend = at(h('div', { class: 'legend' }), 72, 60, 1300); legend.style.justifyContent = 'flex-start'; el.append(legend)
-  legend.innerHTML = '<span><i class="lg lg-ink"></i>posted → confirmed</span><span><i class="lg lg-wait"></i>open, inside its window</span><span><i class="lg lg-amber"></i>open, past its window</span><span><i class="lg lg-dash"></i>window ends</span>'
-  const CH = ROW.heroH, CW = 1776, PAST = 48 * 3600, FUTURE = 12 * 3600, SPAN = PAST + FUTURE, BASE = CH - 28
-  const chart = hero(el, CH); chart.setAttribute('role', 'img'); chart.setAttribute('aria-label', 'State claims over the last 48 hours, one row each, from posting to confirmation')
-  const axis = layer(CW, CH); chart.append(axis)
-  const rows = h('div', { style: 'position:absolute;inset:0', role: 'list' }); chart.append(rows)
+  const CW = 1776, X0 = 72, Y0 = ROW.hero, H = ROW.heroH
+  const colW = (CW - 2 * 48) / 3
+  const zones = new Map<Zone, { box: HTMLElement; grid: HTMLElement; count: HTMLElement }>()
+  ZONES.forEach((z, i) => {
+    const box = at(h('div', { class: 'zone zone-' + z.id }), X0 + i * (colW + 48), Y0, colW, H)
+    const count = h('span', { class: 'zcount' }, '0')
+    box.append(h('div', { class: 'zhead' }, [h('span', { class: 'ztitle' }, z.title), count]), h('div', { class: 'zsub' }, z.sub))
+    const grid = h('div', { class: 'zgrid', role: 'list', 'aria-label': z.title }); box.append(grid)
+    el.append(box); zones.set(z.id, { box, grid, count })
+    if (i < 2) { const arrow = at(h('div', { class: 'zarrow', 'aria-hidden': 'true' }, '→'), X0 + i * (colW + 48) + colW + 10, Y0 + 20, 28, 28); el.append(arrow) }
+  })
   const facts = new Facts(el)
   const insp = new Inspector(el, facts)
-  const note = at(h('p', { class: 'home-next' }, ''), 72, ROW.facts + 124, CW); el.append(note)
+  const note = at(h('p', { class: 'home-next' }, ''), X0, ROW.facts + 124, CW); el.append(note)
 
-  let sig = ''; let shownHash = ''
-  function draw(force = false) {
+  const tiles = new Map<string, HTMLElement>()
+  const zoneOf = (a: Assertion, now: number, win: number): Zone => a.confirmedTime ? 'confirmed' : (a.createdTime && win && now - a.createdTime >= win) ? 'ready' : 'waiting'
+
+  function tile(a: Assertion) {
+    const t = h('div', { class: 'tile', role: 'listitem', tabindex: '0' }, [h('div', { class: 'tfill', 'aria-hidden': 'true' }), h('div', { class: 'tid' }, a.hash.slice(2, 6)), h('div', { class: 'tage' }, '')])
+    const open = () => selectAssertion(a.hash)
+    t.addEventListener('click', open); t.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open() } })
+    tooltip(t, () => {
+      const s = state.snapshot!; const now = s.now; const win = s.health.assertions.confirmPeriod
+      const cur = s.assertions.find((x) => x.hash === a.hash) ?? a
+      const posted = cur.createdTime ? `posted ${fmtTime(cur.createdTime)} · ${fmtAge(now - cur.createdTime)} ago` : 'posted before the lookback'
+      const st = cur.confirmedTime ? `<b>confirmed</b> ${fmtTime(cur.confirmedTime)}${cur.createdTime ? ` · ${fmtAge(cur.confirmedTime - cur.createdTime)} after posting` : ''}` : cur.createdTime && win ? (now - cur.createdTime >= win ? `<b>ready</b> for ${fmtAge(now - cur.createdTime - win)} · waiting for a validator` : `<b>ready in</b> ${fmtAge(cur.createdTime + win - now)}`) : '<b>open</b>'
+      return `claim ${short(cur.hash)}<br>${posted}<br>${st}<br><span class="dim">click for details</span>`
+    })
+    return t
+  }
+
+  function draw() {
     const s = state.snapshot; if (!s) return
     const now = s.now; const win = s.health.assertions.confirmPeriod
-    const list = s.assertions.filter((a) => (a.createdTime && now - a.createdTime <= PAST) || (a.confirmedTime && now - a.confirmedTime <= PAST))
-      .sort((a, b) => (a.createdTime ?? a.confirmedTime!) - (b.createdTime ?? b.confirmedTime!))
-    const nsig = list.map((a) => `${a.hash.slice(0, 8)}.${a.confirmedTime ?? 0}`).join(',') + ':' + Math.floor(now / 300)
-    if (!force && nsig === sig) { drawFacts(); if (insp.open) drawInspector(); return }
-    const animate = force || !sig
-    sig = nsig
-    rows.innerHTML = ''; axis.innerHTML = ''
-    const x = (t: number) => Math.max(0, Math.min(CW, ((t - (now - PAST)) / SPAN) * CW))
-    const NOWX = x(now)
-    axis.append(svg('rect', { x: NOWX, y: 24, width: CW - NOWX, height: BASE - 24, fill: 'rgba(20,20,20,.035)' }))
-    axis.append(svg('path', { class: 'hair2', d: `M 0 ${BASE} H ${CW}` }))
-    for (let hrs = -12; hrs <= 48; hrs += 6) { const xx = x(now - hrs * 3600); axis.append(svg('path', { class: 'hair2', d: `M ${xx} ${BASE} V ${BASE + 8}` })); axis.append(txt(xx, BASE + 22, hrs > 0 ? `−${hrs} h` : hrs < 0 ? `+${-hrs} h` : 'now', hrs ? '' : 'ink', hrs === 48 ? 'start' : hrs === -12 ? 'end' : 'middle')) }
-    axis.append(svg('path', { class: 'ln', d: `M ${NOWX} 24 V ${BASE}`, style: 'stroke:var(--ink);stroke-width:1.5' }))
-    axis.append(txt(NOWX + 8, 36, 'next 12 h', ''))
-    if (!list.length) { axis.append(txt(0, 16, 'no claims in the last 48 h', '')); return }
-    const n = list.length; const rowH = Math.max(6, Math.min(14, (BASE - 40) / n)); const barH = Math.max(4, rowH - 2)
-    axis.append(txt(0, 16, `${n} claims in 48 h · newest at the bottom`, ''))
-    list.forEach((a, i) => {
-      const y = BASE - 8 - (n - 1 - i) * rowH - barH   // newest at the bottom
-      const start = a.createdTime ?? (now - SPAN)
-      const x0 = x(start)
-      const sel = a.hash === state.selectedAssertion
-      if (a.confirmedTime) {
-        const bar = at(h('div', { class: 'claim done' + (sel ? ' sel' : ''), role: 'listitem', tabindex: '0', 'aria-label': `Claim ${short(a.hash)}, posted ${a.createdTime ? fmtClock(a.createdTime) : 'earlier'}, confirmed ${fmtClock(a.confirmedTime)}` }), x0, y, Math.max(3, x(a.confirmedTime) - x0), barH)
-        wire(bar, a); rows.append(bar)
-      } else {
-        const end = a.createdTime ? a.createdTime + win : now
-        const overdue = win > 0 && now > end
-        const openW = Math.max(3, x(Math.min(now, end)) - x0)
-        const bar = at(h('div', { class: 'claim open' + (sel ? ' sel' : ''), role: 'listitem', tabindex: '0', 'aria-label': `Claim ${short(a.hash)}, posted ${a.createdTime ? fmtClock(a.createdTime) : 'earlier'}, open` }), x0, y, openW, barH)
-        wire(bar, a); rows.append(bar)
-        if (overdue) { const late = at(h('div', { class: 'claim late' + (sel ? ' sel' : '') }), x(end), y, Math.max(3, x(now) - x(end)), barH); late.style.pointerEvents = 'none'; rows.append(late) }
-        else if (win > 0) { const ex = x(end); axis.append(svg('path', { class: 'hair2 dash', d: `M ${x(now)} ${y + barH / 2} H ${ex}` })); if (end <= now + FUTURE) axis.append(svg('path', { class: 'ln', d: `M ${ex} ${y} V ${y + barH}`, style: 'stroke:var(--ink)' })) }
+    const list = s.assertions.filter((a) => a.createdTime || a.confirmedTime)
+    const confirmed = list.filter((a) => a.confirmedTime).sort((a, b) => b.confirmedTime! - a.confirmedTime!).slice(0, 12)
+    const keep = new Set([...list.filter((a) => !a.confirmedTime).map((a) => a.hash), ...confirmed.map((a) => a.hash)])
+    // remove tiles that fell out of view
+    for (const [hash, t] of tiles) if (!keep.has(hash)) { gsap.to(t, { opacity: 0, scale: .6, duration: .3, onComplete: () => t.remove() }); tiles.delete(hash) }
+    const counts: Record<Zone, number> = { waiting: 0, ready: 0, confirmed: 0 }
+    const ordered = [...list.filter((a) => !a.confirmedTime).sort((a, b) => (a.createdTime ?? 0) - (b.createdTime ?? 0)), ...confirmed]
+    for (const a of ordered) {
+      const z = zoneOf(a, now, win); counts[z]++
+      const grid = zones.get(z)!.grid
+      let t = tiles.get(a.hash)
+      if (!t) {
+        t = tile(a); tiles.set(a.hash, t); grid.append(t)
+        gsap.fromTo(t, { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: .45, ease: 'back.out(2)' })
+      } else if (t.parentElement !== grid) {
+        // FLIP: keep the tile on screen while it slides to its new zone
+        const r0 = t.getBoundingClientRect(); grid.append(t); const r1 = t.getBoundingClientRect()
+        const deck = document.getElementById('deck')!.getBoundingClientRect(); const sc = deck.width / 1920
+        gsap.fromTo(t, { x: (r0.left - r1.left) / sc, y: (r0.top - r1.top) / sc }, { x: 0, y: 0, duration: .7, ease: 'power3.inOut' })
+        gsap.fromTo(t, { boxShadow: '0 0 0 6px rgba(52,183,221,.6)' }, { boxShadow: '0 0 0 0 rgba(52,183,221,0)', duration: 1.2, ease: 'power2.out' })
       }
-    })
-    if (animate) gsap.fromTo(Array.from(rows.children), { scaleX: 0, transformOrigin: 'left center' }, { scaleX: 1, duration: .4, stagger: .012, ease: 'power3.out' })
+      t.classList.toggle('ready', z === 'ready'); t.classList.toggle('done', z === 'confirmed')
+      t.setAttribute('aria-label', `Claim ${short(a.hash)}, ${z === 'confirmed' ? 'confirmed ' + fmtClock(a.confirmedTime!) : z === 'ready' ? 'ready for a validator' : 'in its challenge window'}`)
+      t.classList.toggle('sel', a.hash === state.selectedAssertion)
+      const fill = t.querySelector('.tfill') as HTMLElement; const age = t.querySelector('.tage') as HTMLElement
+      if (z === 'confirmed') { fill.style.height = '100%'; age.textContent = fmtAgeShort(now - a.confirmedTime!) }
+      else if (a.createdTime && win) { const f = Math.min(1, (now - a.createdTime) / win); gsap.to(fill, { height: `${Math.round(f * 100)}%`, duration: .6, ease: 'power2.out' }); age.textContent = z === 'ready' ? `+${fmtAgeShort(now - a.createdTime - win)}` : fmtAgeShort(win - (now - a.createdTime)) }
+      else { fill.style.height = '0%'; age.textContent = '' }
+    }
+    for (const z of ZONES) { const c = zones.get(z.id)!.count; const v = String(counts[z.id]); if (c.textContent !== v) { c.textContent = v; gsap.fromTo(c, { scale: 1.3 }, { scale: 1, duration: .4, ease: 'back.out(2)' }) } }
     drawFacts(); if (insp.open) drawInspector()
   }
-  function wire(bar: HTMLElement, a: Assertion) {
-    const open = () => selectAssertion(a.hash)
-    bar.addEventListener('click', open); bar.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open() } })
-    tooltip(bar, () => {
-      const s = state.snapshot!; const now = s.now; const win = s.health.assertions.confirmPeriod
-      const posted = a.createdTime ? `posted ${fmtTime(a.createdTime)} · ${fmtAge(now - a.createdTime)} ago` : 'posted before the lookback'
-      const st = a.confirmedTime ? `<b>confirmed</b> ${fmtTime(a.confirmedTime)}${a.createdTime ? ` · after ${fmtAge(a.confirmedTime - a.createdTime)}` : ''}` : a.createdTime && win ? (now > a.createdTime + win ? `<b>eligible since</b> ${fmtTime(a.createdTime + win)} · waiting for a validator` : `<b>eligible</b> in ${fmtAge(a.createdTime + win - now)}`) : '<b>open</b>'
-      return `${short(a.hash)}<br>${posted}<br>${st}<br><span class="dim">click for details</span>`
-    })
-  }
+  const fmtAgeShort = (sec: number) => sec < 3600 ? `${Math.max(0, Math.round(sec / 60))}m` : `${(sec / 3600).toFixed(sec < 36000 ? 1 : 0)}h`
+
   function drawFacts() {
     const s = state.snapshot; if (!s) return
     const now = s.now; const win = s.health.assertions.confirmPeriod
@@ -83,25 +97,23 @@ export function assertionsTab() {
     const conf = all.filter((a) => a.confirmedTime).sort((a, b) => a.confirmedTime! - b.confirmedTime!)
     const gaps = conf.slice(1).map((a, i) => a.confirmedTime! - conf[i].confirmedTime!).filter((g) => g > 600)
     const cad = gaps.length ? [...gaps].sort((a, b) => a - b)[Math.floor(gaps.length / 2)] : 0
-    const oldest = open[0]?.createdTime ? now - open[0].createdTime : 0
-    const overdue = open.filter((a) => win && now - a.createdTime! > win).length
+    const ready = open.filter((a) => win && now - a.createdTime! >= win)
+    const next = open.find((a) => win && now - a.createdTime! < win)
     facts.set([
-      { k: 'open claims', v: `${open.length}`, s: overdue ? `${overdue} past the ${win ? fmtAge(win) : ''} window` : `all inside the ${win ? fmtAge(win) : ''} window`, cls: overdue ? 'amber' : '' },
-      { k: 'oldest waiting', v: oldest ? fmtAge(oldest) : 'none', s: win ? (oldest > win ? `eligible for ${fmtAge(oldest - win)}, waiting for a validator` : `eligible in ${fmtAge(win - oldest)}`) : '', cls: win && oldest > win ? 'amber' : '' },
-      { k: 'confirmations run', v: cad ? `every ${fmtAge(cad)}` : 'measuring', s: 'median gap, in lumps, last 48 h' },
-      { k: 'last confirmed', v: conf.length ? `${fmtAge(now - conf.at(-1)!.confirmedTime!)} <em>ago</em>` : '—', s: conf.length ? fmtClock(conf.at(-1)!.confirmedTime!) : '' },
+      { k: 'in the window', v: `${open.length - ready.length}`, s: next ? `next one ready in ${fmtAge(next.createdTime! + win - now)}` : 'none waiting', cls: '' },
+      { k: 'ready for a validator', v: `${ready.length}`, s: ready.length ? `oldest ready for ${fmtAge(now - ready[0].createdTime! - win)}` : 'nothing eligible yet', cls: ready.length ? 'amber' : '' },
+      { k: 'confirmations run', v: cad ? `every ${fmtAge(cad)}` : 'measuring', s: conf.length ? `last one ${fmtAge(now - conf.at(-1)!.confirmedTime!)} ago` : 'median gap, in lumps' },
+      { k: 'challenge window', v: win ? fmtAge(win) : '—', s: 'read from the rollup contract' },
     ])
-    note.textContent = 'A claim is the sequencer stating Elysium\'s state after a run of batches. It can be confirmed once its challenge window passes with no dispute, but only when a validator submits the confirmation, which on mainnet happens in lumps. Withdrawals execute only after the claim covering them is confirmed.'
+    note.textContent = 'A claim is the sequencer stating Elysium\'s state after a run of batches. Each tile fills as its challenge window elapses. Once full it is ready, and a validator confirms ready claims in lumps. Withdrawals execute only after the claim covering them is confirmed.'
   }
   function drawInspector() {
     const s = state.snapshot; const a = s?.assertions.find((x) => x.hash === state.selectedAssertion); if (!s || !a) return
     const now = s.now; const win = s.health.assertions.confirmPeriod
-    if (insp.open && shownHash === a.hash) return
-    shownHash = a.hash
     insp.show(`claim ${short(a.hash)}`, (body) => {
       body.append(
         ikv('posted', a.createdTime ? `${fmtAge(now - a.createdTime)} <em>ago</em>` : 'before <em>lookback</em>', a.createdTime ? fmtClock(a.createdTime) : 'older than 48 h'),
-        ikv('eligible', a.createdTime && win ? (now > a.createdTime + win ? `since ${fmtAge(now - a.createdTime - win)} <em>ago</em>` : `in ${fmtAge(a.createdTime + win - now)}`) : '—', win ? `${fmtAge(win)} challenge window` : ''),
+        ikv('ready', a.createdTime && win ? (now > a.createdTime + win ? `since ${fmtAge(now - a.createdTime - win)} <em>ago</em>` : `in ${fmtAge(a.createdTime + win - now)}`) : '—', win ? `${fmtAge(win)} challenge window` : ''),
         ikv('confirmed', a.confirmedTime ? `${fmtAge(now - a.confirmedTime)} <em>ago</em>` : '<em>not yet</em>', a.confirmedTime ? fmtClock(a.confirmedTime) + (a.createdTime ? ` · ${fmtAge(a.confirmedTime - a.createdTime)} after posting` : '') : 'waiting for a validator'),
         ikv('on hyperevm', `<span style="font-family:var(--mono);font-size:24px">${a.confirmedBlock ? 'block ' + a.confirmedBlock.toLocaleString('en-US') : a.createdBlock ? 'block ' + a.createdBlock.toLocaleString('en-US') : '—'}</span>`, ' '),
       )
@@ -110,10 +122,12 @@ export function assertionsTab() {
       if (a.confirmTx) l.append(link(`${s.network.explorer.hyperevm}/tx/${a.confirmTx}`, 'confirm tx'))
       l.append(copyBtn(a.hash))
     })
-    for (const r of Array.from(rows.children)) r.classList.toggle('sel', (r as HTMLElement).getAttribute('aria-label')?.includes(short(a.hash)) ?? false)
+    for (const [hash, t] of tiles) t.classList.toggle('sel', hash === a.hash)
   }
   state.onSnapshot.on(() => { if (el.style.display !== 'none') draw() })
   state.onSelectAssertion.on((hsh) => { if (el.style.display === 'none') return; if (hsh === null) insp.hide(); else drawInspector() })
-  state.onNet.on(() => { rows.innerHTML = ''; sig = ''; insp.hide() })
-  return { el, onShow: () => { draw(true); if (state.selectedAssertion) drawInspector() } }
+  state.onNet.on(() => { for (const t of tiles.values()) t.remove(); tiles.clear(); insp.hide() })
+  // keep the fills and ages live between snapshots
+  setInterval(() => { if (el.style.display !== 'none' && state.snapshot) { state.snapshot.now = Math.floor(Date.now() / 1000); draw() } }, 1000)
+  return { el, onShow: () => draw() }
 }

@@ -396,3 +396,24 @@ svg text.ink { fill: var(--ink); } svg text.ely { fill: var(--ely-ink); } svg te
 .claim.late { background: var(--amber-mid); border-color: var(--amber); }
 .claim.sel { outline: 2px solid var(--ely-ink); outline-offset: 1px; }
 .lg-ink { background: var(--ink); } .lg-amber { background: var(--amber-mid); border-color: var(--amber); } .lg-dash { border: 0; border-top: 1px dashed var(--ink); height: 0; width: 18px; }
+
+/* ---------- assertions queue ---------- */
+.zone { position: absolute; border: 1.25px solid var(--rule-strong); padding: 18px 20px; box-sizing: border-box; }
+.zone-ready { border-color: var(--amber); } .zone-confirmed { border-color: var(--ink); }
+.zhead { display: flex; align-items: baseline; justify-content: space-between; }
+.ztitle { font-family: var(--serif); font-size: 28px; letter-spacing: -.01em; color: var(--ink); }
+.zcount { font-family: var(--mono); font-size: 26px; color: var(--ink); will-change: transform; }
+.zsub { font-family: var(--mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-50); margin-top: 4px; }
+.zgrid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; align-content: flex-start; }
+.zarrow { font-family: var(--mono); font-size: 22px; color: var(--ink-30); display: grid; place-items: center; }
+.tile { position: relative; width: 64px; height: 64px; border: 1.25px solid var(--ink); background: var(--paper); overflow: hidden; cursor: pointer; will-change: transform; }
+.tile .tfill { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: var(--ely); opacity: .55; }
+.tile.ready .tfill { background: var(--amber-mid); opacity: .7; }
+.tile.done { background: var(--ink); border-color: var(--ink); } .tile.done .tfill { display: none; }
+.tile .tid { position: absolute; left: 6px; top: 5px; font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: var(--ink-70); }
+.tile .tage { position: absolute; right: 6px; bottom: 4px; font-family: var(--mono); font-size: 13px; color: var(--ink); }
+.tile.done .tid, .tile.done .tage { color: var(--paper); }
+.tile.ready { animation: readypulse 1.6s ease-in-out infinite; }
+@keyframes readypulse { 50% { box-shadow: 0 0 0 4px rgba(168,120,10,.25); } }
+.tile.sel { outline: 2px solid var(--ely-ink); outline-offset: 2px; }
+.tile:hover { border-color: var(--ely-ink); }
