@@ -189,8 +189,8 @@ svg text.ink { fill: var(--ink); } svg text.ely { fill: var(--ely-ink); } svg te
 .kv .v em { font-style: italic; font-weight: 300; color: var(--ely-ink); }
 .kv .v.mono { font-family: var(--mono); font-size: 26px; letter-spacing: 0; }
 .kv .s { font-family: var(--mono); font-size: 14px; letter-spacing: .06em; color: var(--ink-50); margin-top: 6px; }
-.bar { position: absolute; bottom: 0; border: 1px solid var(--ink); background: var(--ely); cursor: pointer; transform-origin: bottom; transition: filter .15s, transform .15s; will-change: transform; }
-.bar:hover { transform: scaleY(1.03); }
+.bar { position: absolute; bottom: 0; border: 1px solid var(--ink); background: var(--ely); cursor: pointer; transform-origin: bottom; transition: filter .15s; will-change: transform; }
+.bar:hover { filter: brightness(.88); }
 .bar.hatch { background: var(--hatch); } .bar.hl { background: var(--hl); } .bar.paper { background: var(--paper-3); } .bar.ely-ink { background: var(--ely-ink); } .bar.amber { background: var(--amber-mid); } .bar.ink { background: var(--ink); } .bar.wait { background: var(--hatch); border-color: var(--rule-strong); cursor: default; }
 .bar:hover { filter: brightness(.85); }
 .bar.sel { outline: 2px solid var(--ink); outline-offset: 1px; }

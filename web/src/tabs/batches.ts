@@ -51,9 +51,9 @@ export function batchesTab() {
       tail.style.top = ''; tail.style.bottom = '28px'
       tooltip(tail, () => `<b>forming now</b><br>${waiting.toLocaleString('en-US')} blocks waiting for batch #${(s.batches.at(-1)?.seq ?? 0) + 1}<br>${s.elysium.unbatchedSeconds ? `${fmtAge(s.elysium.unbatchedSeconds)} behind head` : ''}`)
       bars.append(tail)
-      axis.append(txt(CW - BW - 8, CH - 28 - hgt - 8, `${waiting.toLocaleString('en-US')} waiting`, 'ink', 'end'))
+      axis.append(txt(CW, 16, `${waiting.toLocaleString('en-US')} blocks waiting →`, 'ink', 'end'))
     }
-    if (animate) gsap.from(bars.children, { scaleY: 0, transformOrigin: 'bottom', duration: .35, stagger: .006, ease: 'power3.out', overwrite: true })
+    if (animate) gsap.fromTo(Array.from(bars.children), { scaleY: 0 }, { scaleY: 1, duration: .35, stagger: .006, ease: 'power3.out' })
     drawFacts(); if (insp.open) drawInspector()
   }
   function drawFacts() {
