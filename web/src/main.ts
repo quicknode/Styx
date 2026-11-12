@@ -9,8 +9,6 @@ import { batchesTab } from './tabs/batches'
 import { assertionsTab } from './tabs/assertions'
 import { bridgeTab } from './tabs/bridge'
 import { trackTab } from './tabs/track'
-import { billTab } from './tabs/bill'
-import { fairnessTab } from './tabs/fairness'
 import { networkTab } from './tabs/network'
 
 const deck = document.getElementById('deck')!
@@ -22,17 +20,15 @@ const netname = document.getElementById('netname')!
 
 const tabs = new Tabs(document.getElementById('tabs')!, stage)
 const live = liveTab((id) => tabs.show(id))
-const batches = batchesTab(); const asserts = assertionsTab(); const bridge = bridgeTab(); const bill = billTab(); const fair = fairnessTab(); const track = trackTab(); const network = networkTab()
+const batches = batchesTab(); const asserts = assertionsTab(); const bridge = bridgeTab(); const track = trackTab(); const network = networkTab()
 const home = homeTab((id) => tabs.show(id), (hash) => track.lookup(hash))
 tabs.add({ id: 'home', label: 'Home', key: '1', el: home.el, onShow: home.onShow })
 tabs.add({ id: 'live', label: 'Live', key: '2', el: live.el })
 tabs.add({ id: 'batches', label: 'Batches', key: '3', el: batches.el, onShow: batches.onShow })
 tabs.add({ id: 'assertions', label: 'Assertions', key: '4', el: asserts.el, onShow: asserts.onShow })
 tabs.add({ id: 'bridge', label: 'Bridge', key: '5', el: bridge.el, onShow: bridge.onShow })
-tabs.add({ id: 'bill', label: 'Bill', key: '6', el: bill.el, onShow: bill.onShow })
-tabs.add({ id: 'fairness', label: 'Fairness', key: '7', el: fair.el, onShow: fair.onShow })
-tabs.add({ id: 'track', label: 'Track', key: '8', el: track.el, onShow: track.onShow })
-tabs.add({ id: 'network', label: 'Network', key: '9', el: network.el, onShow: network.onShow })
+tabs.add({ id: 'track', label: 'Track', key: '6', el: track.el, onShow: track.onShow })
+tabs.add({ id: 'network', label: 'Network', key: '7', el: network.el, onShow: network.onShow })
 
 gsap.from('#toprule', { scaleX: 0, duration: 1.2, ease: 'power3.out' })
 gsap.from('#top', { opacity: 0, y: 8, duration: .9, ease: 'power3.out' })
