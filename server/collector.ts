@@ -21,6 +21,8 @@ export class Collector extends EventEmitter {
   deposits: BridgeMsg[] = []
   withdrawals: Withdrawal[] = []
   delayed: number[] = [] // unix seconds of delayed-inbox messages read by the sequencer
+  delayedIdx: { i: number; t: number }[] = [] // every Bridge message index with its parent-chain time
+  incl = { submitted: 0, read: 0, forceWindowSec: 0 }
   /** minute bucket (unix minutes) -> counts; exact hourly totals independent of the recent-list buffer */
   hist = new Map<number, { hype: number; retryable: number; other: number; withdrawals: number }>()
   private bump(t: number, k: 'hype' | 'retryable' | 'other' | 'withdrawals') {
@@ -63,6 +65,18 @@ export class Collector extends EventEmitter {
 
   /** Rollup confirmPeriodBlocks, in parent-chain blocks (HyperEVM ≈ 1 s each). */
   confirmPeriodBlocks = 0
+  async readInclusion() {
+    try {
+      const [a, b, c] = await this.l1.batch([
+        { method: 'eth_call', params: [{ to: this.net.contracts.bridge, data: '0xeca067ad' }, 'latest'] },
+        { method: 'eth_call', params: [{ to: this.net.contracts.sequencerInbox, data: '0x7fa3a40e' }, 'latest'] },
+        { method: 'eth_call', params: [{ to: this.net.contracts.sequencerInbox, data: '0xebea461d' }, 'latest'] },
+      ])
+      if (typeof a === 'string' && a.length > 2) this.incl.submitted = Number(BigInt(a))
+      if (typeof b === 'string' && b.length > 2) this.incl.read = Number(BigInt(b))
+      if (typeof c === 'string' && c.length >= 2 + 64 * 3) this.incl.forceWindowSec = Number(BigInt('0x' + c.slice(2 + 64 * 2, 2 + 64 * 3)))
+    } catch (e) { console.warn('[inclusion]', (e as Error).message) }
+  }
   async readConfirmPeriod() {
     if (this.confirmPeriodBlocks) return
     try { const r = await this.l1.call<string>('eth_call', [{ to: this.net.contracts.rollup, data: '0x2e7acfa6' }, 'latest']); this.confirmPeriodBlocks = Number(BigInt(r)); console.log(`[collector] ${this.net.name}: confirmPeriodBlocks = ${this.confirmPeriodBlocks}`) } catch (e) { console.warn('[collector] confirmPeriodBlocks', (e as Error).message) }
@@ -70,6 +84,7 @@ export class Collector extends EventEmitter {
   async start() {
     await this.readConfirmPeriod()
     if (!this.confirmPeriodBlocks) setInterval(() => void this.readConfirmPeriod(), 30000)
+    await this.readInclusion(); setInterval(() => void this.readInclusion(), 10000)
     this.l1Head = await this.l1.blockNumber()
     const from = Math.max(1, this.l1Head - this.backfillBlocks)
     console.log(`[collector] ${this.net.name}: backfilling HyperEVM ${from}..${this.l1Head}`)
@@ -216,7 +231,9 @@ export class Collector extends EventEmitter {
       const dataLocation = hexToNum(word(log.data, Math.floor((log.data.length - 2) / 64) - 1))
       const batch: Batch = { seq, l1Block, l1Time, txHash: log.transactionHash, daMode: 'unknown', daHeader: '0x', dataBytes: 0 }
       try {
-        const tx = await this.l1.call<any>('eth_getTransactionByHash', [log.transactionHash])
+        const [tx, rc] = await this.l1.batch([{ method: 'eth_getTransactionByHash', params: [log.transactionHash] }, { method: 'eth_getTransactionReceipt', params: [log.transactionHash] }])
+        if (rc && rc.gasUsed) { batch.gasUsed = hexToNum(rc.gasUsed); const gp = Number(BigInt(rc.effectiveGasPrice ?? tx.gasPrice ?? '0x0')); batch.gasPriceGwei = gp / 1e9; batch.feeHype = (batch.gasUsed * gp) / 1e18; batch.poster = rc.from }
+        batch.forced = tx.input.startsWith('0xf1981578')
         const d = decodeBatchData(tx.input)
         batch.daHeader = d.header; batch.dataBytes = d.length; batch.daMode = d.mode
         if (dataLocation !== 0 && d.mode === 'unknown') batch.daMode = dataLocation === 3 ? 'blob' : 'unknown'
@@ -226,6 +243,7 @@ export class Collector extends EventEmitter {
         const w = (i: number) => Number(BigInt('0x' + raw.slice(i * 64, i * 64 + 64)))
         const prev = w(4), next = w(5)
         if (next > prev && next < 1e12) { batch.l2FirstBlock = prev; batch.l2LastBlock = next - 1; batch.l2Blocks = next - prev }
+        if (!batch.forced) batch.delayedRead = w(2)
       } catch (e) { console.warn('[batch data]', (e as Error).message) }
       this.batches.set(seq, batch)
       this.trimBatches()
@@ -246,6 +264,7 @@ export class Collector extends EventEmitter {
       if (!backfill) this.emitEvent({ type: 'assertion_confirmed', assertion: a })
     } else if (t0 === TOPICS.MessageDelivered) {
       const kind = hexToNum(word(log.data, 1))
+      this.delayedIdx.push({ i: hexToNum(log.topics[1]), t: l1Time }); if (this.delayedIdx.length > 60000) this.delayedIdx.splice(0, this.delayedIdx.length - 60000)
       if (!DEPOSIT_KINDS.has(kind)) return
       const msg: BridgeMsg = { index: hexToNum(log.topics[1]), kind, kindLabel: KIND_LABEL[kind] ?? `kind ${kind}`, l1Block, l1Time, txHash: log.transactionHash }
       this.deposits.push(msg); if (this.deposits.length > 3000) this.deposits.splice(0, this.deposits.length - 3000)
@@ -322,6 +341,32 @@ export class Collector extends EventEmitter {
   }
 
   // ---------- derived ----------
+  costs(now: number) {
+    const bs = [...this.batches.values()].filter((b) => b.feeHype !== undefined).sort((a, b) => a.seq - b.seq)
+    const day = bs.filter((b) => now - b.l1Time < 86400)
+    const feeDay = day.reduce((a, b) => a + (b.feeHype ?? 0), 0)
+    const blocksDay = day.reduce((a, b) => a + (b.l2Blocks ?? 0), 0)
+    const gasDay = day.reduce((a, b) => a + (b.gasUsed ?? 0), 0)
+    const fees = day.map((b) => b.feeHype!).sort((a, b) => a - b)
+    const last = bs.at(-1)
+    return {
+      last: last ? { seq: last.seq, gasUsed: last.gasUsed!, gasPriceGwei: last.gasPriceGwei!, feeHype: last.feeHype! } : null,
+      day: { batches: day.length, feeHype: feeDay, elysiumBlocks: blocksDay, gasUsed: gasDay },
+      perBlockHype: blocksDay ? feeDay / blocksDay : 0,
+      perBatchMedianHype: fees.length ? fees[Math.floor(fees.length / 2)] : 0,
+    }
+  }
+  inclusion(now: number) {
+    const { submitted, read, forceWindowSec } = this.incl
+    const backlog = Math.max(0, submitted - read)
+    const waiting = this.delayedIdx.filter((d) => d.i >= read)
+    const oldest = waiting.length ? Math.min(...waiting.map((d) => d.t)) : 0
+    const bs = [...this.batches.values()].sort((a, b) => a.seq - b.seq)
+    const forced24 = bs.filter((b) => b.forced && now - b.l1Time < 86400).length
+    const lastTwo = bs.filter((b) => b.delayedRead !== undefined).slice(-2)
+    const absorbedLast = lastTwo.length === 2 ? Math.max(0, lastTwo[1].delayedRead! - lastTwo[0].delayedRead!) : 0
+    return { submitted, read, backlog, oldestWaitingSec: oldest ? Math.max(0, now - oldest) : 0, forceWindowSec, forcedLast24h: forced24, submitted24h: this.delayedIdx.filter((d) => now - d.t < 86400).length, absorbedLast }
+  }
   lastBatch(): Batch | undefined { let m: Batch | undefined; for (const b of this.batches.values()) if (!m || b.seq > m.seq) m = b; return m }
   unbatched(): number { const h = this.heads.at(-1); const b = this.lastBatch(); return h && b?.l2LastBlock ? Math.max(0, h.number - b.l2LastBlock) : 0 }
   unbatchedSeconds(): number { const h = this.heads.at(-1); const b = this.lastBatch(); return h && b?.l2LastTime ? Math.max(0, h.timestamp - b.l2LastTime) : 0 }
@@ -406,6 +451,8 @@ export class Collector extends EventEmitter {
       delayedMessages: { lastHour: this.delayed.filter((t) => now - t < 3600).length },
       histogram: this.histogram(1440),
       withdrawals24h: this.withdrawals.filter((w) => now - w.l1Time < 86400).length,
+      costs: this.costs(now),
+      inclusion: this.inclusion(now),
       health: this.health(),
     }
   }

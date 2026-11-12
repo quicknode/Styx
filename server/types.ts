@@ -14,6 +14,12 @@ export interface Batch {
   l2LastTime?: number
   l2Blocks?: number
   postingDelay?: number   // seconds between the newest Elysium block in the batch and the HyperEVM inclusion
+  gasUsed?: number
+  gasPriceGwei?: number
+  feeHype?: number
+  delayedRead?: number    // afterDelayedMessagesRead from the batch call
+  forced?: boolean        // posted via forceInclusion, not by the batch poster
+  poster?: string
 }
 
 export interface Assertion {
@@ -69,6 +75,8 @@ export interface Snapshot {
   delayedMessages: { lastHour: number }
   histogram: { minute: number; hype: number; retryable: number; other: number; withdrawals: number }[]
   withdrawals24h: number
+  costs: { last: { seq: number; gasUsed: number; gasPriceGwei: number; feeHype: number } | null; day: { batches: number; feeHype: number; elysiumBlocks: number; gasUsed: number }; perBlockHype: number; perBatchMedianHype: number }
+  inclusion: { submitted: number; read: number; backlog: number; oldestWaitingSec: number; forceWindowSec: number; forcedLast24h: number; submitted24h: number; absorbedLast: number }
   health: Health
 }
 

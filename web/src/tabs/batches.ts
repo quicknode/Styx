@@ -83,7 +83,7 @@ export function batchesTab() {
     for (const bar of Array.from(bars.children)) bar.classList.toggle('sel', (bar as HTMLElement).getAttribute('aria-label')?.startsWith(`Batch ${b.seq},`) ?? false)
   }
   state.onSnapshot.on(() => { if (el.style.display !== 'none') draw() })
-  state.onSelectBatch.on((seq) => { if (seq === null) insp.hide(); else drawInspector() })
+  state.onSelectBatch.on((seq) => { if (el.style.display === 'none') return; if (seq === null) insp.hide(); else drawInspector() })
   state.onNet.on(() => { bars.innerHTML = ''; sig = ''; insp.hide() })
   return { el, onShow: () => { draw(true); if (state.selectedBatch) drawInspector() } }
 }

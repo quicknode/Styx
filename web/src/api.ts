@@ -1,5 +1,5 @@
 export type DaMode = 'anytrust' | 'blob' | 'fulldata' | 'unknown'
-export interface Batch { seq: number; l1Block: number; l1Time: number; txHash: string; daMode: DaMode; daHeader: string; dataBytes: number; l2FirstBlock?: number; l2LastBlock?: number; l2LastTime?: number; l2Blocks?: number; postingDelay?: number }
+export interface Batch { seq: number; l1Block: number; l1Time: number; txHash: string; daMode: DaMode; daHeader: string; dataBytes: number; l2FirstBlock?: number; l2LastBlock?: number; l2LastTime?: number; gasUsed?: number; gasPriceGwei?: number; feeHype?: number; delayedRead?: number; forced?: boolean; poster?: string; l2Blocks?: number; postingDelay?: number }
 export interface Assertion { hash: string; createdBlock?: number; createdTime?: number; confirmedBlock?: number; confirmedTime?: number; createTx?: string; confirmTx?: string }
 export interface BridgeMsg { index: number; kind: number; kindLabel: string; l1Block: number; l1Time: number; txHash: string }
 export interface Withdrawal { l1Block: number; l1Time: number; txHash: string }
@@ -23,6 +23,8 @@ export interface Snapshot {
   delayedMessages: { lastHour: number }
   histogram: { minute: number; hype: number; retryable: number; other: number; withdrawals: number }[]
   withdrawals24h: number
+  costs: { last: { seq: number; gasUsed: number; gasPriceGwei: number; feeHype: number } | null; day: { batches: number; feeHype: number; elysiumBlocks: number; gasUsed: number }; perBlockHype: number; perBatchMedianHype: number }
+  inclusion: { submitted: number; read: number; backlog: number; oldestWaitingSec: number; forceWindowSec: number; forcedLast24h: number; submitted24h: number; absorbedLast: number }
   health: Health
 }
 export type Net = 'mainnet' | 'testnet'
