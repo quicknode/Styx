@@ -28,6 +28,10 @@ export function bridgeTab() {
   const chart = hero(el, CH); chart.setAttribute('role', 'img'); chart.setAttribute('aria-label', 'Bridge crossings per minute')
   const axis = layer(CW, CH); chart.append(axis)
   const bars = h('div', { style: 'position:absolute;inset:0' }); chart.append(bars)
+  const guide = h('div', { class: 'chart-guide' }); chart.append(guide)
+  chart.addEventListener('mousemove', (e) => { const r = chart.getBoundingClientRect(); const sc = r.width / CW; guide.style.left = Math.round((e.clientX - r.left) / sc) + 'px'; guide.style.opacity = '1' })
+  chart.addEventListener('mouseleave', () => { guide.style.opacity = '0' })
+  const prevH = new Map<string, number>()
   const facts = new Facts(el)
   const feed = at(h('div', { class: 'feedline', 'aria-live': 'polite' }), 72, ROW.facts + 124, CW); el.append(feed)
   const recent: { kind: Kind; t: number; tx: string }[] = []
@@ -47,18 +51,23 @@ export function bridgeTab() {
     ;[0.5, 1].forEach((f) => { const y = CH - 28 - (CH - 60) * f; axis.append(svg('path', { class: 'hair', d: `M 0 ${y} H ${CW}` })); axis.append(txt(0, y - 6, Math.round(max * f).toLocaleString('en-US') + ' / min')) })
     axis.append(txt(0, CH - 8, windowMin === 60 ? '−60 min' : '−3 h')); axis.append(txt(CW, CH - 8, 'now', '', 'end'))
     const bw = CW / hist.length
+    const nextH = new Map<string, number>()
     hist.forEach((m, i) => {
       let y = 0
       for (const k of kinds) {
         const v = m[k]; if (!v) continue
         const hgt = (v / max) * (CH - 60)
-        const bar = at(h('div', { class: 'bar ' + KC[k] }), i * bw + 1, 0, Math.max(1, bw - 2), hgt)
+        const key = `${m.minute}:${k}`; nextH.set(key, hgt)
+        const bar = at(h('div', { class: 'bar ' + KC[k] + (i === hist.length - 1 ? ' newest' : '') }), i * bw + 1, 0, Math.max(1, bw - 2), hgt)
         bar.style.top = ''; bar.style.bottom = (28 + y) + 'px'
         tooltip(bar, () => `<b>${fmtTime(m.minute * 60)}</b><br>${kinds.map((kk) => `${KL[kk]}: ${m[kk]}`).join('<br>')}`)
         bars.append(bar); y += hgt
+        // quick and smooth: grow from the previous height for this minute, from zero for a new one
+        const from = animate ? 0 : (prevH.get(key) ?? 0)
+        if (Math.abs(from - hgt) > .5) gsap.fromTo(bar, { height: from }, { height: hgt, duration: animate ? .35 : .25, delay: animate ? i * .003 : 0, ease: 'power3.out', overwrite: true })
       }
     })
-    if (animate) gsap.from(bars.children, { scaleY: 0, duration: .5, stagger: .002, ease: 'power3.out', overwrite: true })
+    prevH.clear(); for (const [k, v] of nextH) prevH.set(k, v)
     const sum = (k: Kind) => hist.reduce((a, m) => a + m[k], 0)
     const win = windowMin === 60 ? 'last hour' : 'last 3 h'
     facts.set([
@@ -79,7 +88,7 @@ export function bridgeTab() {
       const item = h('span', { class: 'feeditem' }, [h('i', { class: 'sw ' + KC[r.kind], 'aria-hidden': 'true' }), `${fmtTime(r.t)} ${KL[r.kind]} `, link(`${s.network.explorer.hyperevm}/tx/${r.tx}`, short(r.tx))])
       feed.append(item)
     }
-    gsap.fromTo(feed.children, { opacity: 0, x: -6 }, { opacity: 1, x: 0, duration: .35, stagger: .04, ease: 'power2.out', overwrite: true })
+    gsap.fromTo(feed.children, { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: .25, stagger: .03, ease: 'power3.out', overwrite: true })
   }
   const seed = (s: typeof state.snapshot) => {
     if (!s || recent.length) return

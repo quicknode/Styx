@@ -45,7 +45,7 @@ export function assertionsTab() {
         if (a.createdTime && now - a.createdTime <= span) sv.append(svg('path', { class: 'ln dash', d: `M ${x(a.createdTime)} ${MID - 24} L ${x(a.confirmedTime)} ${MID + 24}` }))
       }
     }
-    if (animate) gsap.from(dots.children, { scale: 0, duration: .5, stagger: .04, ease: 'back.out(2)', transformOrigin: 'center', overwrite: true })
+    if (animate) gsap.from(dots.children, { scale: 0, duration: .3, stagger: .025, ease: 'back.out(2)', transformOrigin: 'center', overwrite: true })
     drawFacts(); if (insp.open) drawInspector()
   }
   function drawFacts() {

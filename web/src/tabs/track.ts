@@ -31,8 +31,9 @@ export function trackTab() {
   const sv = layer(W, HERO_H); hero.append(sv)
   sv.append(svg('path', { class: 'hair2', d: `M ${SX[0]} ${RAIL_Y} H ${SX[3]}` }))
   const progress = svg('path', { class: 'trk-progress', d: `M ${SX[0]} ${RAIL_Y} H ${SX[0]}` }); sv.append(progress)
-  sv.append(txt(W / 2, RAIL_Y - 100, 'batch crosses here', '', 'middle'))
-  sv.append(svg('path', { class: 'hair2 dash', d: `M ${W / 2} ${RAIL_Y - 88} V ${RAIL_Y + 70}` }))
+  const pending = svg('path', { class: 'trk-pending', d: '' }); sv.append(pending)
+  sv.append(txt(W / 2, RAIL_Y - 104, 'batch crosses here', '', 'middle'))
+  const gate = svg('path', { class: 'hair2 dash trk-gate', d: `M ${W / 2} ${RAIL_Y - 92} V ${RAIL_Y + 74}` }); sv.append(gate)
   const stations = STAGES.map((st, i) => {
     const g = at(h('div', { class: 'trk-station ' + st.side }), SX[i], RAIL_Y, 0, 0)
     g.append(h('div', { class: 'node' }, String(i + 1)), h('div', { class: 'name' }, st.t), h('div', { class: 'when' }, ''), h('div', { class: 'desc' }, st.d))
@@ -40,7 +41,9 @@ export function trackTab() {
   })
   const marker = at(h('div', { class: 'trk-marker' }), SX[0], RAIL_Y); hero.append(marker)
   const ring = at(h('div', { class: 'trk-ring' }), SX[0], RAIL_Y); hero.append(ring)
-  marker.style.opacity = '0'; ring.style.opacity = '0'
+  const packet = at(h('div', { class: 'trk-packet' }), SX[0], RAIL_Y); hero.append(packet)
+  marker.style.opacity = '0'; ring.style.opacity = '0'; packet.style.opacity = '0'
+  const regions = Array.from(hero.querySelectorAll('.trk-region')) as HTMLElement[]
 
   const facts = new Facts(el, 560)
   const history: string[] = JSON.parse(localStorage.getItem('esm.hist') ?? '[]')
@@ -87,13 +90,22 @@ export function trackTab() {
     })
     // progress line + marker travel, only animate when the reached stage changes
     const tx = SX[Math.max(0, reached - 1)]
+    // pending stretch: marching dashes from the reached station to the next one
+    if (reached < 4) pending.setAttribute('d', `M ${tx} ${RAIL_Y} H ${SX[reached]}`); else pending.setAttribute('d', '')
+    regions[0].classList.toggle('focus', reached <= 2); regions[1].classList.toggle('focus', reached >= 3)
     if (reached !== reachedShown) {
       const from = reachedShown < 0 ? SX[0] : SX[Math.max(0, reachedShown - 1)]
+      const crossing = from < W / 2 && tx > W / 2
+      const dur = .7
       progress.setAttribute('d', `M ${SX[0]} ${RAIL_Y} H ${from}`)
-      gsap.to({ x: from }, { x: tx, duration: .9, ease: 'power2.inOut', onUpdate() { const v = (this as any).targets()[0].x; progress.setAttribute('d', `M ${SX[0]} ${RAIL_Y} H ${v}`) } })
-      gsap.to(marker, { left: tx, opacity: 1, duration: .9, ease: 'power2.inOut' })
-      gsap.to(ring, { left: tx, opacity: 1, duration: .9, ease: 'power2.inOut' })
-      for (let i = Math.max(0, reachedShown); i < reached; i++) gsap.fromTo(stations[i].querySelector('.node'), { scale: .6 }, { scale: 1, duration: .5, delay: .6 + i * .12, ease: 'back.out(2.5)' })
+      const o = { x: from }
+      gsap.to(o, { x: tx, duration: dur, ease: 'power2.inOut', onUpdate: () => { progress.setAttribute('d', `M ${SX[0]} ${RAIL_Y} H ${o.x}`); packet.style.left = o.x + 'px' } })
+      gsap.fromTo(packet, { opacity: 1, scale: 1 }, { opacity: 0, scale: .4, duration: .25, delay: dur, ease: 'power2.in' })
+      gsap.to(marker, { left: tx, opacity: 1, duration: dur, ease: 'power2.inOut' })
+      gsap.to(ring, { left: tx, opacity: 1, duration: dur, ease: 'power2.inOut' })
+      if (crossing) gsap.fromTo(gate, { strokeWidth: 1, opacity: 1 }, { strokeWidth: 6, opacity: 0, duration: .6, delay: dur * .5, ease: 'power2.out', onComplete: () => { gate.style.strokeWidth = ''; gate.style.opacity = '' } })
+      for (let i = Math.max(0, reachedShown); i < reached; i++) gsap.fromTo(stations[i].querySelector('.node'), { scale: .5 }, { scale: 1, duration: .4, delay: dur * (i + 1 - Math.max(0, reachedShown)) / Math.max(1, reached - Math.max(0, reachedShown)), ease: 'back.out(3)' })
+      gsap.fromTo(headline, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: .4, ease: 'power2.out' })
       reachedShown = reached
     }
     facts.set([

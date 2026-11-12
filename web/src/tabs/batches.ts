@@ -51,7 +51,7 @@ export function batchesTab() {
       tooltip(bar, () => `<b>batch #${b.seq}</b><br>${LABEL[metric]}: ${un ? 'resolving…' : metric === 'delay' ? fmtAge(v) : v.toLocaleString('en-US')}<br>landed ${fmtTime(b.l1Time)}<br><span class="dim">click for details</span>`)
       bars.append(bar)
     })
-    if (animate) gsap.from(bars.children, { scaleY: 0, duration: .5, stagger: .006, ease: 'power3.out', overwrite: true })
+    if (animate) gsap.from(bars.children, { scaleY: 0, duration: .3, stagger: .004, ease: 'power3.out', overwrite: true })
     drawFacts(); if (insp.open) drawInspector()
   }
   function drawFacts() {

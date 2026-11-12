@@ -341,3 +341,17 @@ svg text.ink { fill: var(--ink); } svg text.ely { fill: var(--ely-ink); } svg te
 .trk-ring { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; border: 1.5px solid var(--ely-ink); animation: trkring 1.8s ease-out infinite; pointer-events: none; }
 @keyframes trkring { 0% { transform: scale(.5); opacity: .9; } 100% { transform: scale(1.8); opacity: 0; } }
 .trk-links { position: absolute; display: flex; gap: 28px; font-family: var(--mono); font-size: 14px; letter-spacing: .04em; }
+
+/* ---------- motion polish ---------- */
+.chart-guide { position: absolute; top: 0; bottom: 28px; width: 1px; background: var(--ink); opacity: 0; pointer-events: none; transition: opacity .15s; }
+.bar.newest { box-shadow: 0 0 0 1px var(--paper) inset; }
+.trk-pending { fill: none; stroke: var(--ely-ink); stroke-width: 2; stroke-dasharray: 6 8; animation: march 1s linear infinite; opacity: .6; }
+@keyframes march { to { stroke-dashoffset: -14; } }
+.trk-packet { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; background: var(--ely); border: 1.5px solid var(--ely-ink); z-index: 3; pointer-events: none; }
+.trk-region { transition: background-color .4s, border-color .4s; }
+.trk-region.ely.focus { background: rgba(52,183,221,.18); } .trk-region.hl.focus { background: rgba(151,252,228,.30); }
+.trk-region:not(.focus) .panel-title { color: var(--ink-50); }
+.trk-station .name { transition: color .3s; }
+.trk-station.here .name { color: var(--ink); font-size: 30px; }
+.trk-station.here .node { box-shadow: 0 0 0 4px rgba(20,20,20,.08); }
+.trk-gate { stroke: var(--ink); }
