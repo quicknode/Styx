@@ -282,7 +282,7 @@ svg text.ink { fill: var(--ink); } svg text.ely { fill: var(--ely-ink); } svg te
 .home-search-lbl em { font-style: italic; font-weight: 300; color: var(--ely-ink); }
 .home-sentence { position: absolute; margin: 0; font-size: 26px; line-height: 1.6; color: var(--ink-70); }
 .home-sentence b { font-weight: 400; color: var(--ink); }
-#home-search { position: absolute; height: 52px; box-sizing: border-box; border: 1.25px solid var(--ink); background: var(--paper); font-family: var(--mono); font-size: 18px; color: var(--ink); padding: 0 16px; outline: none; }
+#home-search { position: absolute; height: 72px; box-sizing: border-box; border: 1.25px solid var(--ink); background: var(--paper); font-family: var(--mono); font-size: 18px; color: var(--ink); padding: 0 16px; outline: none; }
 #home-search:focus { border-color: var(--ely-ink); }
 .home-hint { position: absolute; font-family: var(--mono); font-size: 14px; letter-spacing: .04em; color: var(--ink-50); }
 .home-links { position: absolute; display: grid; grid-template-columns: repeat(5, 1fr); gap: 48px; }
@@ -300,3 +300,43 @@ svg text.ink { fill: var(--ink); } svg text.ely { fill: var(--ely-ink); } svg te
 .home-go:hover { transform: translate(-1px,-1px); box-shadow: 5px 5px 0 var(--ely); }
 .home-go:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--paper-3); }
 .home-go .arrow { font-size: 18px; }
+
+/* ---------- home, layout C ---------- */
+.verdict { position: absolute; margin: 0; font-family: var(--serif); font-weight: 400; font-size: 56px; line-height: 64px; letter-spacing: -.02em; color: var(--ink); }
+.verdict em { font-style: italic; font-weight: 300; color: var(--ely-ink); }
+.verdict.ok em { color: var(--hl-ink); } .verdict.amber em { color: var(--amber); } .verdict.warn em { color: var(--warn); }
+.statusbar { position: absolute; display: flex; gap: 12px; }
+.sb { display: inline-flex; align-items: center; gap: 12px; height: 40px; padding: 0 16px 0 14px; border: 1px solid var(--rule-strong); background: var(--paper); font-family: var(--mono); font-size: 13px; letter-spacing: .1em; text-transform: uppercase; cursor: pointer; transition: border-color .2s; }
+.sb:hover, .sb:focus-visible { border-color: var(--ink); }
+.sb .sq { width: 10px; height: 10px; border: 1.25px solid var(--ink); background: var(--paper); display: inline-block; }
+.sb.live .sq { background: var(--hl); border-color: var(--hl-ink); }
+.sb.pending .sq { background: var(--amber-fill); border-color: var(--amber); border-radius: 50%; }
+.sb.failure .sq { background: var(--warn-fill); border-color: var(--warn); transform: rotate(45deg); }
+.sb .sl { color: var(--ink-50); } .sb .sword { color: var(--ink); }
+.sb.pending .sword { color: var(--amber); } .sb.failure .sword { color: var(--warn); }
+.home-detail { position: absolute; margin: 0; font-size: 22px; line-height: 1.5; color: var(--ink-70); }
+.home-next { position: absolute; margin: 0; font-family: var(--mono); font-size: 14px; letter-spacing: .06em; color: var(--ink-50); }
+.hair-x { position: absolute; height: 1px; background: var(--rule); }
+.home-search-lbl { margin: 0; font-size: 36px; line-height: 44px; }
+
+/* ---------- track journey ---------- */
+.trk-head { position: absolute; margin: 0; font-family: var(--serif); font-weight: 400; font-size: 36px; line-height: 44px; letter-spacing: -.02em; color: var(--ink); }
+.trk-head em { font-style: italic; font-weight: 300; color: var(--ely-ink); }
+.trk-hero { position: absolute; }
+.trk-region { position: absolute; border: 1.25px solid; }
+.trk-region.ely { border-color: var(--ely-ink); background: rgba(52,183,221,.10); }
+.trk-region.hl { border-color: var(--hl-ink); background: rgba(151,252,228,.18); }
+.trk-progress { fill: none; stroke: var(--ely-ink); stroke-width: 3; stroke-linecap: square; }
+.trk-station { position: absolute; width: 0; }
+.trk-station .node { position: absolute; left: -22px; top: -22px; width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--ink); background: var(--paper); display: grid; place-items: center; font-family: var(--mono); font-size: 15px; color: var(--ink); will-change: transform; }
+.trk-station.done .node { background: var(--ely); border-color: var(--ely-ink); color: var(--ely-deep); }
+.trk-station.hl.done .node { background: var(--hl); border-color: var(--hl-ink); color: var(--hl-deep); }
+.trk-station .name { position: absolute; left: -120px; width: 240px; top: 38px; text-align: center; font-family: var(--serif); font-size: 28px; letter-spacing: -.01em; color: var(--ink-50); }
+.trk-station.done .name, .trk-station.here .name { color: var(--ink); }
+.trk-station .when { position: absolute; left: -140px; width: 280px; top: 76px; text-align: center; font-family: var(--mono); font-size: 13px; letter-spacing: .06em; color: var(--ely-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trk-station.hl .when { color: var(--hl-ink); }
+.trk-station .desc { position: absolute; left: -130px; width: 260px; top: -92px; text-align: center; font-size: 14px; line-height: 1.45; color: var(--ink-50); }
+.trk-marker { position: absolute; width: 18px; height: 18px; margin: -9px 0 0 -9px; background: var(--ink); border: 1.5px solid var(--paper); box-shadow: 0 0 0 1.5px var(--ink); z-index: 2; }
+.trk-ring { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; border: 1.5px solid var(--ely-ink); animation: trkring 1.8s ease-out infinite; pointer-events: none; }
+@keyframes trkring { 0% { transform: scale(.5); opacity: .9; } 100% { transform: scale(1.8); opacity: 0; } }
+.trk-links { position: absolute; display: flex; gap: 28px; font-family: var(--mono); font-size: 14px; letter-spacing: .04em; }
