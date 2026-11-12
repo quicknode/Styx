@@ -30,12 +30,87 @@ html, body { height: 100%; background: #0e0e0d; color: var(--ink); font-family: 
 #eyebrow .wave { position: absolute; left: 1px; right: 4px; bottom: -9px; height: 12px; width: auto; overflow: visible; }
 #eyebrow .wave path { fill: none; stroke-width: 1.3; stroke-linecap: round; stroke-dasharray: 23 9 41 13 17 7; }
 /* three irregular strands, each flowing at its own prime-ish period and wobbling on a different clock, so the pattern never visibly repeats */
-#eyebrow .wave .w1 { stroke: var(--ely-ink); animation: flow 7.3s linear infinite, wobble 4.1s ease-in-out infinite; }
-#eyebrow .wave .w2 { stroke: var(--ely); opacity: .85; animation: flow 11.7s linear infinite reverse, wobble 5.9s ease-in-out infinite reverse; }
-#eyebrow .wave .w3 { stroke: var(--hl-ink); opacity: .55; animation: flow 9.1s linear infinite, wobble 3.3s ease-in-out infinite, breathe 6.7s ease-in-out infinite; }
-@keyframes flow { to { stroke-dashoffset: -110; } }
-@keyframes wobble { 0%, 100% { transform: translateY(0); } 33% { transform: translateY(1.2px); } 66% { transform: translateY(-0.8px); } }
-@keyframes breathe { 50% { opacity: .2; } }
+#eyebrow .wave .w1 { stroke: var(--ely-ink); animation: flow 7.3s linear infinite, wobbleA 4.1s linear infinite; }
+#eyebrow .wave .w2 { stroke: var(--ely); opacity: .85; animation: flowBack 11.7s linear infinite, wobbleB 5.9s linear infinite; }
+#eyebrow .wave .w3 { stroke: var(--hl-ink); animation: flow 9.1s linear infinite, wobbleC 3.3s linear infinite, breathe 6.7s linear infinite; }
+@keyframes flow { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -110; } }
+@keyframes flowBack { from { stroke-dashoffset: 0; } to { stroke-dashoffset: 110; } }
+@keyframes wobbleA {
+  0.00% { transform: translateY(0.000px); }
+  6.25% { transform: translateY(0.421px); }
+  12.50% { transform: translateY(0.778px); }
+  18.75% { transform: translateY(1.016px); }
+  25.00% { transform: translateY(1.100px); }
+  31.25% { transform: translateY(1.016px); }
+  37.50% { transform: translateY(0.778px); }
+  43.75% { transform: translateY(0.421px); }
+  50.00% { transform: translateY(0.000px); }
+  56.25% { transform: translateY(-0.421px); }
+  62.50% { transform: translateY(-0.778px); }
+  68.75% { transform: translateY(-1.016px); }
+  75.00% { transform: translateY(-1.100px); }
+  81.25% { transform: translateY(-1.016px); }
+  87.50% { transform: translateY(-0.778px); }
+  93.75% { transform: translateY(-0.421px); }
+  100.00% { transform: translateY(-0.000px); }
+}
+@keyframes wobbleB {
+  0.00% { transform: translateY(0.777px); }
+  6.25% { transform: translateY(0.544px); }
+  12.50% { transform: translateY(0.228px); }
+  18.75% { transform: translateY(-0.122px); }
+  25.00% { transform: translateY(-0.454px); }
+  31.25% { transform: translateY(-0.717px); }
+  37.50% { transform: translateY(-0.871px); }
+  43.75% { transform: translateY(-0.892px); }
+  50.00% { transform: translateY(-0.777px); }
+  56.25% { transform: translateY(-0.544px); }
+  62.50% { transform: translateY(-0.228px); }
+  68.75% { transform: translateY(0.122px); }
+  75.00% { transform: translateY(0.454px); }
+  81.25% { transform: translateY(0.717px); }
+  87.50% { transform: translateY(0.871px); }
+  93.75% { transform: translateY(0.892px); }
+  100.00% { transform: translateY(0.777px); }
+}
+@keyframes wobbleC {
+  0.00% { transform: translateY(-1.133px); }
+  6.25% { transform: translateY(-1.291px); }
+  12.50% { transform: translateY(-1.252px); }
+  18.75% { transform: translateY(-1.022px); }
+  25.00% { transform: translateY(-0.637px); }
+  31.25% { transform: translateY(-0.155px); }
+  37.50% { transform: translateY(0.351px); }
+  43.75% { transform: translateY(0.803px); }
+  50.00% { transform: translateY(1.133px); }
+  56.25% { transform: translateY(1.291px); }
+  62.50% { transform: translateY(1.252px); }
+  68.75% { transform: translateY(1.022px); }
+  75.00% { transform: translateY(0.637px); }
+  81.25% { transform: translateY(0.155px); }
+  87.50% { transform: translateY(-0.351px); }
+  93.75% { transform: translateY(-0.803px); }
+  100.00% { transform: translateY(-1.133px); }
+}
+@keyframes breathe {
+  0.00% { opacity: 0.200; }
+  6.25% { opacity: 0.215; }
+  12.50% { opacity: 0.259; }
+  18.75% { opacity: 0.323; }
+  25.00% { opacity: 0.400; }
+  31.25% { opacity: 0.477; }
+  37.50% { opacity: 0.541; }
+  43.75% { opacity: 0.585; }
+  50.00% { opacity: 0.600; }
+  56.25% { opacity: 0.585; }
+  62.50% { opacity: 0.541; }
+  68.75% { opacity: 0.477; }
+  75.00% { opacity: 0.400; }
+  81.25% { opacity: 0.323; }
+  87.50% { opacity: 0.259; }
+  93.75% { opacity: 0.215; }
+  100.00% { opacity: 0.200; }
+}
 #eyebrow .sub { margin-left: 18px; padding-left: 18px; border-left: 1px solid var(--rule-strong); font-family: var(--mono); font-size: 12.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-50); line-height: 16px; }
 #lockup { position: absolute; left: 72px; top: 1030px; display: flex; align-items: center; gap: 22px; z-index: 4; }
 #lockup img { display: block; } #lockup .lk-ely { height: 24px; } #lockup .lk-qn { height: 19px; } #lockup .lk-x { width: 1px; height: 22px; background: var(--rule-strong); }
