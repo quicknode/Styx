@@ -5,10 +5,10 @@ import { copyBtn, link, tooltip } from '../ui'
 import { titleRow, hero, Facts, Inspector, ikv, ROW } from '../layout'
 import { fmtAge, fmtClock, fmtTime, short } from '../api'
 
-/** Assertions: a 24 h timeline. ○ created above the line, ● confirmed below, joined when both are in view. */
+/** Assertions: a 24 h timeline. ○ posted above the line, ● confirmed below, joined when both are in view. */
 export function assertionsTab() {
   const el = h('div')
-  titleRow(el, 'State claims, <em>created then confirmed</em>.')
+  titleRow(el, 'State claims, <em>posted then confirmed</em>.')
   const TH = ROW.heroH; const TW = 1776
   const tl = hero(el, TH); tl.setAttribute('role', 'img'); tl.setAttribute('aria-label', '24 hour timeline of assertions')
   const sv = layer(TW, TH); tl.append(sv)
@@ -28,14 +28,14 @@ export function assertionsTab() {
     sv.innerHTML = ''; dots.innerHTML = ''
     sv.append(svg('path', { class: 'hair2', d: `M 0 ${MID} H ${TW}` }))
     for (let hrs = 0; hrs <= 24; hrs += 4) { const xx = x(now - hrs * 3600); sv.append(svg('path', { class: 'hair', d: `M ${xx} ${MID - 8} V ${MID + 8}` })); sv.append(txt(xx, TH - 10, hrs ? `−${hrs} h` : 'now', '', hrs === 24 ? 'start' : hrs ? 'middle' : 'end')) }
-    sv.append(txt(0, 20, '○ created', '')); sv.append(txt(0, MID + 70, '● confirmed', ''))
+    sv.append(txt(0, 20, '○ claim posted', '')); sv.append(txt(0, MID + 70, '● claim confirmed', ''))
     const list = s.assertions.filter((a) => a.createdTime || a.confirmedTime)
     const mk = (a: typeof list[number], t: number, confirmed: boolean) => {
-      const d = h('div', { class: 'dot-asrt' + (confirmed ? ' ok' : '') + (a.hash === state.selectedAssertion ? ' sel' : ''), role: 'listitem', tabindex: '0', 'aria-label': `${confirmed ? 'Confirmed' : 'Created'} ${fmtClock(t)}, ${short(a.hash)}` })
+      const d = h('div', { class: 'dot-asrt' + (confirmed ? ' ok' : '') + (a.hash === state.selectedAssertion ? ' sel' : ''), role: 'listitem', tabindex: '0', 'aria-label': `Claim ${confirmed ? 'confirmed' : 'posted'} ${fmtClock(t)}, ${short(a.hash)}` })
       at(d, x(t), confirmed ? MID + 36 : MID - 36)
       const open = () => selectAssertion(a.hash)
       d.addEventListener('click', open); d.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open() } })
-      tooltip(d, () => `<b>${confirmed ? 'confirmed' : 'created'}</b> ${fmtTime(t)}<br>${short(a.hash)}${confirmed && a.createdTime ? `<br>${fmtAge(t - a.createdTime)} after creation` : ''}<br><span class="dim">click for details</span>`)
+      tooltip(d, () => `<b>${confirmed ? 'claim confirmed' : 'claim posted'}</b> ${fmtTime(t)}<br>${short(a.hash)}${confirmed && a.createdTime ? `<br>${fmtAge(t - a.createdTime)} after it was posted` : ''}<br><span class="dim">click for details</span>`)
       dots.append(d)
     }
     for (const a of list) {
@@ -57,8 +57,8 @@ export function assertionsTab() {
     const med = lags.length ? [...lags].sort((p, q) => p - q)[Math.floor(lags.length / 2)] : 0
     facts.set([
       { k: 'last confirmed', v: conf ? `${fmtAge(now - conf.confirmedTime!)} <em>ago</em>` : '—', s: conf ? fmtClock(conf.confirmedTime!) : '' },
-      { k: 'open claims', v: `${open.length}`, s: open[0]?.createdTime ? `oldest ${fmtAge(now - open[0].createdTime)} into a ${s.health.assertions.confirmPeriod >= 3600 ? Math.round(s.health.assertions.confirmPeriod / 3600) + ' h' : s.health.assertions.confirmPeriod + ' s'} window` : 'none waiting', cls: s.health.assertions.state === 'live' ? '' : 'amber' },
-      { k: 'typical confirmation lag', v: med ? fmtAge(med) : '—', s: 'created to confirmed, last 24 h' },
+      { k: 'open claims', v: `${open.length}`, s: open[0]?.createdTime ? `oldest posted ${fmtAge(now - open[0].createdTime)} ago, in a ${s.health.assertions.confirmPeriod >= 3600 ? Math.round(s.health.assertions.confirmPeriod / 3600) + ' h' : s.health.assertions.confirmPeriod + ' s'} window` : 'none waiting', cls: s.health.assertions.state === 'live' ? '' : 'amber' },
+      { k: 'typical confirmation lag', v: med ? fmtAge(med) : '—', s: 'posted to confirmed, last 24 h' },
       { k: 'what this means', v: 'Withdrawals <em>wait</em>', s: 'for the claim covering them to confirm' },
     ])
   }
@@ -69,9 +69,9 @@ export function assertionsTab() {
     shownHash = a.hash
     insp.show(`assertion ${short(a.hash)}`, (body) => {
       body.append(
-        ikv('created', a.createdTime ? `${fmtAge(now - a.createdTime)} <em>ago</em>` : 'before <em>lookback</em>', a.createdTime ? fmtClock(a.createdTime) : 'older than 24 h'),
+        ikv('posted', a.createdTime ? `${fmtAge(now - a.createdTime)} <em>ago</em>` : 'before <em>lookback</em>', a.createdTime ? fmtClock(a.createdTime) : 'older than 24 h'),
         ikv('confirmed', a.confirmedTime ? `${fmtAge(now - a.confirmedTime)} <em>ago</em>` : '<em>pending</em>', a.confirmedTime ? fmtClock(a.confirmedTime) : 'waiting for the challenge window'),
-        ikv('created to confirmed', a.createdTime && a.confirmedTime ? fmtAge(a.confirmedTime - a.createdTime) : a.confirmedTime ? 'creation not in view' : 'not yet', ''),
+        ikv('posted to confirmed', a.createdTime && a.confirmedTime ? fmtAge(a.confirmedTime - a.createdTime) : a.confirmedTime ? 'creation not in view' : 'not yet', ''),
         ikv('on hyperevm', `<span style="font-family:var(--mono);font-size:24px">${a.confirmedBlock ? 'block ' + a.confirmedBlock.toLocaleString('en-US') : a.createdBlock ? 'block ' + a.createdBlock.toLocaleString('en-US') : '—'}</span>`, ' '),
       )
       const l = body.lastElementChild!.querySelector('.s')!

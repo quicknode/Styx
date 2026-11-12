@@ -196,8 +196,13 @@ export class Lanes {
   layoutMarkers() {}
   onAssertion(a: Assertion, confirmed: boolean) {
     const t = confirmed ? a.confirmedTime! : a.createdTime!
-    const m = h('div', { class: 'marker asrt' + (confirmed ? ' ok' : ''), html: `<div class="sq"></div>${confirmed ? 'confirmed' : 'created'}` })
+    const m = h('div', { class: 'marker asrt' + (confirmed ? ' ok' : ''), html: `<div class="sq"></div>${confirmed ? 'claim confirmed' : 'claim posted'}` })
     m.dataset.x = String(this.xForL1Time(t))
+    m.style.pointerEvents = 'auto'
+    m.addEventListener('mousemove', (e) => this.showTip(e, confirmed
+      ? `<b>State claim confirmed</b><br>The claim ${a.hash.slice(0, 10)}… passed its challenge window with no dispute. Withdrawals it covers can now execute.`
+      : `<b>State claim posted</b><br>The sequencer told HyperEVM what Elysium's state is after a run of batches: ${a.hash.slice(0, 10)}…<br>It now waits out the challenge window before it counts.`))
+    m.addEventListener('mouseleave', () => this.hideTip())
     at(m, this.TRACK_R, this.L1Y - 58); this.markers.append(m)
     gsap.fromTo(m, { opacity: 0, scale: 1.8 }, { opacity: 1, scale: 1, duration: .6, ease: 'back.out(2)' })
     this.renderAssertions()
@@ -211,7 +216,7 @@ export class Lanes {
     const list = this.assertions.filter((a) => a.createdTime || a.confirmedTime).slice(-3)
     const colW = this.W / 3
     list.forEach((a, i) => {
-      const created = a.createdTime ? `created ${fmtAge(now - a.createdTime)} ago` : 'created before lookback'
+      const created = a.createdTime ? `posted ${fmtAge(now - a.createdTime)} ago` : 'posted before lookback'
       const lag = a.confirmedTime ? (a.createdTime ? `confirmed after ${fmtAge(a.confirmedTime - a.createdTime)}` : `confirmed ${fmtAge(now - a.confirmedTime)} ago`) : 'awaiting confirmation'
       const el = at(h('div', { class: 'asrt-item' }, [
         h('div', { class: 'callout' + (a.confirmedTime ? ' filled' : '') }, a.confirmedTime ? '●' : '○'),
