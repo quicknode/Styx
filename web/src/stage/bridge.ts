@@ -24,7 +24,7 @@ export class BridgePanel {
     }
     this.inEl = mk('deposits into Elysium', 'hl', 800)
     this.outEl = mk('withdrawals to HyperEVM', 'ely', 1200)
-    this.outSub = at(h('div', { class: 'lbl', style: 'color:var(--ink-30)' }, ''), 1200 + 330, 62); this.root.append(this.outSub)
+    this.outSub = at(h('div', { class: 'lbl', style: 'color:var(--ink-30)' }, ''), 1200, 82); this.root.append(this.outSub)
   }
   setLastWithdrawal(ago: number | null, day = 0) { this.outSub.textContent = ago === null ? 'none seen yet' : `${day.toLocaleString('en-US')} in 24 h · last ${ago > 3600 ? (ago / 3600).toFixed(1) + ' h' : Math.round(ago / 60) + ' min'} ago` }
   setCounts(c: { hype: number; retryable: number; other: number; withdrawals: number }) {
