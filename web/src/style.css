@@ -368,16 +368,19 @@ svg text.ink { fill: var(--ink); } svg text.ely { fill: var(--ely-ink); } svg te
 .trk-gate { stroke: var(--ink); }
 
 /* ---------- batches ruler ---------- */
-.legend { position: absolute; display: flex; justify-content: flex-end; gap: 22px; font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-50); white-space: nowrap; }
+.legend { position: absolute; display: flex; justify-content: flex-end; gap: 22px; top: 54px; font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-50); white-space: nowrap; }
 .legend span { display: inline-flex; align-items: center; gap: 8px; }
 .lg { display: inline-block; width: 14px; height: 10px; border: 1px solid var(--ink); }
 .lg-seg { background: var(--ely); border-color: var(--ely-ink); } .lg-stem { width: 2px; height: 14px; background: var(--ink); border: 0; } .lg-wait { background: var(--hatch); }
-.seg { position: absolute; box-sizing: border-box; border: 1px solid var(--ely-ink); background: var(--ely); cursor: pointer; will-change: transform; transition: filter .15s; }
+.seg { position: absolute; box-sizing: border-box; border: 1px solid var(--ely-ink); background: var(--ely); cursor: pointer; will-change: transform; }
 .seg:hover { filter: brightness(.9); }
+.seg.alt { background: #6fcde8; }
 .seg.sel { background: var(--ely-ink); }
+.segn { position: absolute; left: 6px; bottom: 8px; font-family: var(--mono); font-size: 12px; letter-spacing: .04em; color: var(--ely-deep); opacity: .8; pointer-events: none; }
+.seg.sel .segn { color: var(--paper); }
 .seg.full { background: var(--amber-fill); border-color: var(--amber); }
 .seg.wait { background: var(--hatch); border-color: var(--rule-strong); cursor: default; }
-.segl { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); font-family: var(--mono); font-size: 12px; letter-spacing: .06em; color: var(--ely-deep); pointer-events: none; }
+.segl { position: absolute; left: 6px; top: 8px; font-family: var(--mono); font-size: 12px; letter-spacing: .06em; color: var(--ely-deep); pointer-events: none; }
 .seg.sel .segl { color: var(--paper); }
 .stem { position: absolute; background: var(--ink); pointer-events: none; }
 .stem.sel { background: var(--ely-ink); width: 3px; }
