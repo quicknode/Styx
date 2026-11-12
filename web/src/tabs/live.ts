@@ -38,6 +38,7 @@ export function liveTab(openTab: (id: string) => void) {
     const last = s.batches.at(-1)
     lanes.setOpen(last, s.elysium.head, s.now)
     lanes.setBacklog(s.elysium.unbatchedBlocks, s.elysium.unbatchedSeconds)
+    lanes.setInterval(s.elysium.blockInterval)
     if (!seeded) { seeded = true; lanes.seedMarkers(s.batches, s.assertions); if (s.hyperevm.head) lanes.onL1Head(s.hyperevm.head); for (const m of Array.from(lanes.markers.children) as HTMLElement[]) wireMarker(m) }
     bridge.setCounts(s.bridge.perHour)
     refreshFacts(s)

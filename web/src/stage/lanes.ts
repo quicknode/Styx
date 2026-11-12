@@ -94,9 +94,17 @@ export class Lanes {
   private elyNowX() { return (performance.now() - this.elyT0) * this.ELY_SPEED + (this.TRACK_R - this.TRACK_L) }
   private l1NowX() { return (performance.now() - this.l1T0) * this.L1_SPEED + (this.TRACK_R - this.TRACK_L) }
 
+  private lastTickAt = 0
+  private interval = 100
+  setInterval(ms: number) { if (ms > 30 && ms < 2000) this.interval = ms }
+  /** Heads arrive in bursts over the socket; place ticks at an even cadence so the lane reads as the chain's real rhythm. */
   onHead(hd: Head) {
     this.setNum(this.elyNum, hd.number)
-    const t = h('div', { class: 'tick' }); const x = this.elyNowX()
+    const now = performance.now()
+    let when = Math.max(now, this.lastTickAt + this.interval * 0.9)
+    if (when - now > 600) when = now // never fall far behind reality
+    this.lastTickAt = when
+    const t = h('div', { class: 'tick' }); const x = (when - this.elyT0) * this.ELY_SPEED + (this.TRACK_R - this.TRACK_L)
     t.dataset.x = String(x); t.style.transform = `translate3d(${x}px,-50%,0)`
     this.elyGroup.append(t)
     gsap.fromTo(t, { scaleY: 2.4, opacity: 0 }, { scaleY: 1, opacity: 1, duration: .35, ease: 'power2.out' })
