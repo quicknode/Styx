@@ -48,6 +48,6 @@ export class BridgePanel {
       .to(coin, { scale: 0, opacity: 0, duration: .25 })
     gsap.fromTo(target, { scale: 1.1 }, { scale: 1, duration: .5, ease: 'back.out(2)' })
   }
-  deposit(m: BridgeMsg) { this.fly(m.kind === 12 ? '' : 'rt', this.H - 22, 30, this.inEl) }
+  deposit(m: BridgeMsg) { this.fly(m.kind === 12 ? 'hype' : m.kind === 9 ? 'tok' : 'msg', this.H - 22, 30, this.inEl) }
   withdrawal(_w: Withdrawal) { this.fly('out', 30, this.H - 22, this.outEl) }
 }
