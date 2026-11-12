@@ -131,6 +131,17 @@ export class Collector extends EventEmitter {
       this.withdrawals.sort((x, y) => x.l1Time - y.l1Time)
       console.log(`[collector] outbox deep backfill: ${this.withdrawals.length} withdrawals over 48 h`)
     } catch (e) { console.warn('[outbox deep backfill]', (e as Error).message) }
+    // Deposits for the 24 h histogram: Bridge MessageDelivered only, counted into the per-minute buckets.
+    try {
+      const dfrom = Math.max(1, this.l1Head - 86400); let n = 0
+      for (let a = dfrom; a < to; a += 1000) {
+        const b = Math.min(a + 999, to - 1)
+        const logs = await this.fetchLogs(this.net.contracts.bridge, [TOPICS.MessageDelivered], a, b)
+        if (logs.length) { await this.ensureTimestamps([...new Set(logs.map((l) => hexToNum(l.blockNumber)))]); for (const l of logs) await this.handleLog(l, true); n += logs.length }
+      }
+      this.deposits.sort((x, y) => x.l1Time - y.l1Time)
+      console.log(`[collector] bridge deep backfill: ${n} messages over 24 h`)
+    } catch (e) { console.warn('[bridge deep backfill]', (e as Error).message) }
   }
 
   // ---------- HyperEVM side ----------
