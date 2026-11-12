@@ -131,7 +131,7 @@ export class Lanes {
       .to(this.bracket, { opacity: 1, duration: .3 })
     // marker on the HyperEVM lane at the right edge
     const m = h('div', { class: 'marker', html: `<div class="sq"></div>#${b.seq}` })
-    m.dataset.block = String(b.l1Block)
+    m.dataset.block = String(b.l1Block); m.dataset.seq = String(b.seq)
     at(m, this.TRACK_R, this.L1Y + 12)
     this.markers.append(m)
     gsap.fromTo(m, { opacity: 0, y: -10 }, { opacity: 1, y: 0, duration: .5, delay: 1.5, ease: 'back.out(2)' })
@@ -159,7 +159,7 @@ export class Lanes {
   seedMarkers(batches: Batch[], asserts: Assertion[]) {
     this.markers.innerHTML = ''
     for (const b of batches.slice(-8)) {
-      const m = h('div', { class: 'marker', html: `<div class="sq"></div>#${b.seq}` }); m.dataset.block = String(b.l1Block); at(m, this.TRACK_R, this.L1Y + 12); this.markers.append(m)
+      const m = h('div', { class: 'marker', html: `<div class="sq"></div>#${b.seq}` }); m.dataset.block = String(b.l1Block); m.dataset.seq = String(b.seq); at(m, this.TRACK_R, this.L1Y + 12); this.markers.append(m)
     }
     for (const a of asserts.slice(-6)) {
       const blk = a.confirmedBlock ?? a.createdBlock; if (!blk) continue

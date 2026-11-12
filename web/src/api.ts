@@ -21,8 +21,10 @@ export interface Snapshot {
   assertions: Assertion[]
   bridge: { deposits: BridgeMsg[]; withdrawals: Withdrawal[]; perHour: { hype: number; retryable: number; other: number; withdrawals: number } }
   delayedMessages: { lastHour: number }
+  histogram: { minute: number; hype: number; retryable: number; other: number; withdrawals: number }[]
   health: Health
 }
+export type Net = 'mainnet' | 'testnet'
 export interface TxLadder {
   hash: string
   status: 'not_found' | 'pending' | 'included' | 'batched' | 'l1_confirmed' | 'assertion_confirmed'
@@ -47,10 +49,12 @@ type Handlers = {
   status?: (connected: boolean) => void
 }
 
-export function connect(h: Handlers) {
+export function connect(net: Net, h: Handlers) {
   let es: EventSource | null = null
+  let closed = false
   const open = () => {
-    es = new EventSource('/api/events')
+    if (closed) return
+    es = new EventSource(`/api/${net}/events`)
     es.onopen = () => h.status?.(true)
     es.onerror = () => { h.status?.(false); es?.close(); setTimeout(open, 2000) }
     es.addEventListener('head', (e) => h.head?.(JSON.parse((e as MessageEvent).data).head))
@@ -64,11 +68,15 @@ export function connect(h: Handlers) {
     es.addEventListener('snapshot', (e) => h.snapshot?.(JSON.parse((e as MessageEvent).data).snapshot))
   }
   open()
-  return () => es?.close()
+  return () => { closed = true; es?.close() }
 }
 
-export const fetchSnapshot = () => fetch('/api/snapshot').then((r) => r.json() as Promise<Snapshot>)
-export const fetchTx = (hash: string) => fetch(`/api/tx/${hash}`).then((r) => r.json() as Promise<TxLadder>)
+export const fetchSnapshot = (net: Net) => fetch(`/api/${net}/snapshot`).then((r) => r.json() as Promise<Snapshot>)
+export const fetchTx = (net: Net, hash: string) => fetch(`/api/${net}/tx/${hash}`).then((r) => r.json() as Promise<TxLadder>)
+export const fetchSampleTx = (net: Net) => fetch(`/api/${net}/sample-tx`).then((r) => r.json() as Promise<{ hash: string | null }>)
+export const fetchNetworks = () => fetch('/api/networks').then((r) => r.json() as Promise<{ networks: Net[]; ready: Record<string, boolean> }>)
+export const fmtTime = (unix: number) => new Date(unix * 1000).toLocaleTimeString('en-US', { hour12: false })
+export const fmtClock = (unix: number) => new Date(unix * 1000).toLocaleString('en-US', { hour12: false, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 
 export const fmtAge = (s: number) => (s < 60 ? `${Math.max(0, Math.round(s))} s` : s < 3600 ? `${Math.floor(s / 60)} min ${Math.round(s % 60)} s` : `${(s / 3600).toFixed(1)} h`)
 export const short = (h: string) => h.slice(0, 6) + '…' + h.slice(-4)

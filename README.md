@@ -19,6 +19,17 @@ Everything is read from the rollup contracts on HyperEVM and from Elysium block 
 
 The Arbitrum RPC methods (`arb_findBatchContainingBlock`, `arb_getL1Confirmations`) are used only as a fallback for blocks older than the backfill window. They are available on Quicknode Elysium endpoints.
 
+## Tabs
+
+- **Live:** the two lanes, assertion row, bridge panel, and a compact tracker. Batch markers show a tooltip and open the batch on click. Health chips jump to their tab.
+- **Batches:** a chart of the last 60 batches (posting delay, blocks per batch, or payload bytes), a table, and a detail card for the selected batch. Hover any bar; click to select.
+- **Assertions:** a 24 h timeline, hollow for created and filled for confirmed, with a table and a detail card.
+- **Bridge:** a per-minute histogram filtered by kind (HYPE, token retryables, L2 messages, withdrawals) over 60 min or 3 h, totals, and a live feed of crossings.
+- **Track:** the full ladder with an explanation per rung, a history of recent lookups, and a one-click "newest batched tx" sample.
+- **Network:** chain facts, the contracts being read with copy and explorer links, and exactly how each health light is computed.
+
+Keyboard: `1` to `6` switch tabs, `/` jumps to Track and focuses the input, `p` pauses animation, `m` and `t` switch network. The server runs every network listed in `NETWORKS` so the switch in the header is instant.
+
 ## Run it
 
 ```sh
@@ -27,7 +38,7 @@ npm install
 npm run dev            # server on :8787, UI on :5173
 ```
 
-Switch networks with `NETWORK=mainnet` or `NETWORK=testnet` in `.env`. Production: `npm run build && npm start` serves the built UI and the API from one port.
+Set `NETWORKS=mainnet,testnet` in `.env` to run both collectors; the UI switches between them. Production: `npm run build && npm start` serves the built UI and the API from one port.
 
 Contract addresses for both networks live in `server/networks.ts` and come from [Kinetiq's contract-addresses page](https://elysium.kinetiq.xyz/docs/contract-addresses).
 

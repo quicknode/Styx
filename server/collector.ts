@@ -27,6 +27,21 @@ export class Collector extends EventEmitter {
     const m = Math.floor(t / 60); const e = this.hist.get(m) ?? { hype: 0, retryable: 0, other: 0, withdrawals: 0 }; e[k]++; this.hist.set(m, e)
     if (this.hist.size > 1500) for (const key of [...this.hist.keys()].sort((a, b) => a - b).slice(0, this.hist.size - 1500)) this.hist.delete(key)
   }
+  histogram(minutes: number) {
+    const nowM = Math.floor(Date.now() / 60000); const out: { minute: number; hype: number; retryable: number; other: number; withdrawals: number }[] = []
+    for (let m = nowM - minutes + 1; m <= nowM; m++) { const e = this.hist.get(m); out.push({ minute: m, hype: e?.hype ?? 0, retryable: e?.retryable ?? 0, other: e?.other ?? 0, withdrawals: e?.withdrawals ?? 0 }) }
+    return out
+  }
+  /** A transaction from the newest batched Elysium block, for the "try one" button. */
+  async sampleTx(): Promise<string | null> {
+    const b = this.lastBatch(); if (!b?.l2LastBlock) return null
+    for (let n = b.l2LastBlock; n > b.l2LastBlock - 50; n--) {
+      const blk = await this.l2.getBlock(n, false)
+      const txs: string[] = blk?.transactions ?? []
+      if (txs.length) return txs[txs.length - 1]
+    }
+    return null
+  }
   lastHour() {
     const nowM = Math.floor(Date.now() / 60000); const o = { hype: 0, retryable: 0, other: 0, withdrawals: 0 }
     for (const [m, e] of this.hist) if (nowM - m < 60) { o.hype += e.hype; o.retryable += e.retryable; o.other += e.other; o.withdrawals += e.withdrawals }
@@ -56,7 +71,7 @@ export class Collector extends EventEmitter {
     this.ready = true
     console.log(`[collector] backfill done: ${this.batches.size} batches, ${this.assertions.size} assertions, ${this.deposits.length} deposits, ${this.withdrawals.length} withdrawals`)
     // schedule L2 range detail for the most recent batches first
-    const seqs = [...this.batches.keys()].sort((a, b) => b - a).slice(0, 12)
+    const seqs = [...this.batches.keys()].sort((a, b) => b - a)
     this.detailQueue.push(...seqs)
     void this.drainDetail()
     this.connectHeads()
@@ -309,7 +324,7 @@ export class Collector extends EventEmitter {
     const lastConfirmedAge = lastConf ? now - lastConf.confirmedTime! : 1e9
     const created = as.filter((a) => a.createdTime).sort((a, b) => a.createdTime! - b.createdTime!)
     const cgaps = created.slice(-10).map((a, i, arr) => (i ? a.createdTime! - arr[i - 1].createdTime! : 0)).filter(Boolean)
-    const cmed = Math.max(3600, cgaps.length >= 2 ? median(cgaps) : 3600)
+    const cmed = Math.max(3600, cgaps.length >= 1 ? median(cgaps) : 3600)
     const open = as.filter((a) => a.createdTime && !a.confirmedTime).length
     const aState = !confirmed.length && !created.length ? 'unknown' : lastConfirmedAge < cmed * 2 ? 'live' : lastConfirmedAge < cmed * 4 ? 'pending' : 'failure'
 
@@ -342,13 +357,14 @@ export class Collector extends EventEmitter {
       now,
       elysium: { head, blockInterval: this.blockIntervalMs(), l1Lag, recentHeads: this.heads.slice(-60), unbatchedBlocks: this.unbatched(), unbatchedSeconds: this.unbatchedSeconds() },
       hyperevm: { head: this.l1Head, headTime: this.l1HeadTime },
-      batches: [...this.batches.values()].sort((a, b) => a.seq - b.seq).slice(-60),
+      batches: [...this.batches.values()].sort((a, b) => a.seq - b.seq).slice(-80),
       assertions: [...this.assertions.values()].sort((a, b) => (a.createdBlock ?? a.confirmedBlock ?? 0) - (b.createdBlock ?? b.confirmedBlock ?? 0)).slice(-40),
       bridge: {
         deposits, withdrawals: this.withdrawals.slice(-100),
         perHour: lh,
       },
       delayedMessages: { lastHour: this.delayed.filter((t) => now - t < 3600).length },
+      histogram: this.histogram(180),
       health: this.health(),
     }
   }

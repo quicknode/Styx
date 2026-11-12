@@ -11,11 +11,12 @@ const ITEMS: { key: keyof Omit<Health, 'sentence'>; label: string; value: (hh: H
 
 export class HealthStrip {
   els = new Map<string, { root: HTMLElement; v: HTMLElement; d: HTMLElement; state: HealthState | 'unknown' }>()
-  constructor(root: HTMLElement) {
+  constructor(root: HTMLElement, onClick?: (key: string) => void) {
     for (const it of ITEMS) {
       const v = h('div', { class: 'v', html: 'Waiting' })
       const d = h('div', { class: 'd' }, '—')
       const el = h('div', { class: 'hp' }, [h('div', { class: 'k' }, [h('span', { class: 'dot' }), it.label]), v, d])
+      el.addEventListener('click', () => onClick?.(it.key))
       root.append(el)
       this.els.set(it.key, { root: el, v, d, state: 'unknown' })
     }

@@ -1,6 +1,7 @@
 import gsap from 'gsap'
 import { at, h, G } from '../dom'
 import { fetchTx, fmtAge, type TxLadder } from '../api'
+import { state } from '../state'
 
 const RUNGS = [
   { key: 'included', title: 'Included', hint: 'In an Elysium block' },
@@ -42,7 +43,7 @@ export class Tracker {
   async lookup(hash: string) {
     if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) { this.status.textContent = 'That is not a transaction hash.'; return }
     this.status.textContent = 'Looking it up…'; this.status.classList.add('pulse')
-    const r = await fetchTx(hash)
+    const r = await fetchTx(state.net, hash)
     this.status.classList.remove('pulse')
     this.render(r)
     clearTimeout(this.timer)
