@@ -5,7 +5,7 @@ import { titleRow, ROW } from '../layout'
 import { fetchSampleTx, fetchTx, fmtAge, fmtTime, short, type TxLadder } from '../api'
 
 const STEPS = [
-  { t: 'Included', d: 'In an Elysium block. A receipt in about 100 ms, but only Elysium knows about it so far.' },
+  { t: 'Included', d: 'In an Elysium block. You get a receipt within one block, but only Elysium knows about it so far.' },
   { t: 'Batched', d: 'A batch covering this block was posted to HyperEVM, carrying an AnyTrust certificate.' },
   { t: 'L1 confirmed', d: 'HyperEVM blocks are stacking on top of the batch. Reorganizing it now means reorganizing HyperEVM.' },
   { t: 'Asserted', d: 'The state claim covering this batch was confirmed. Withdrawals that depend on it can execute.' },

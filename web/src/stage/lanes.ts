@@ -129,7 +129,7 @@ export class Lanes {
   onL1Head(n: number, ts?: number) {
     if (n <= this.l1Head) return
     this.l1Head = n; this.setNum(this.l1Num, n)
-    if (ts) { this.l1Times.push(ts); if (this.l1Times.length > 30) this.l1Times.shift() }
+    if (ts) { this.l1HeadTime = ts; this.l1Times.push(ts); if (this.l1Times.length > 30) this.l1Times.shift() }
     if (this.l1Times.length > 5) { const iv = (this.l1Times.at(-1)! - this.l1Times[0]) / (this.l1Times.length - 1); this.l1Title.textContent = `HyperEVM · settlement · every ${iv.toFixed(1)} s` }
     const b = h('div', { class: 'blk hl' }); b.dataset.n = String(n); if (ts) b.dataset.t = String(ts); const x = this.l1NowX()
     b.dataset.x = String(x); b.style.transform = `translate3d(${x}px,0,0)`
@@ -171,7 +171,7 @@ export class Lanes {
       .to(cert, { scaleY: .6, scaleX: 1.25, duration: .12, ease: 'power1.out' })
       .to(cert, { scaleY: 1, scaleX: 1, opacity: 0, duration: .3, ease: 'power2.out' })
       .fromTo(ring, { scale: .2, opacity: .9 }, { scale: 3, opacity: 0, duration: .9, ease: 'power2.out' }, '-=.4')
-    this.addMarker(b.seq, b.l1Block, true)
+    this.addMarker(b.seq, b.l1Block, b.l1Time, true)
     this.lastSeq = b.seq
     this.openSeq.textContent = `latest block · batch #${b.seq + 1} forming`
     this.openAge.textContent = `last batch #${b.seq} · just now`
@@ -179,25 +179,25 @@ export class Lanes {
   }
   onBatchDetail(_b: Batch) {}
 
-  private addMarker(seq: number, l1Block: number, animate: boolean) {
+  l1HeadTime = 0
+  /** x inside the L1 group for a parent-chain timestamp: distance from the newest HyperEVM block time, so placement follows the chain clock. */
+  private xForL1Time(t: number) { const ref = this.l1HeadTime || Math.floor(Date.now() / 1000); return this.l1NowX() - Math.max(0, ref - t) * 1000 * this.L1_SPEED }
+  private addMarker(seq: number, l1Block: number, l1Time: number, animate: boolean) {
     const m = h('div', { class: 'marker', html: `<div class="sq"></div>#${seq}` })
     m.dataset.seq = String(seq); m.dataset.block = String(l1Block)
-    // x inside the L1 group for this block, relative to the current head
-    const dx = (this.l1Head - l1Block) * (this.L1_SPEED * 1000)
-    m.dataset.x = String(this.l1NowX() - dx)
+    m.dataset.x = String(this.xForL1Time(l1Time))
     at(m, this.TRACK_R, this.L1Y + 16); this.markers.append(m)
     if (animate) gsap.fromTo(m, { opacity: 0, y: -16 }, { opacity: 1, y: 0, duration: .5, delay: 1.5, ease: 'back.out(2)' })
   }
   seedMarkers(batches: Batch[], _asserts: Assertion[]) {
     this.markers.innerHTML = ''
-    for (const b of batches.slice(-12)) this.addMarker(b.seq, b.l1Block, false)
+    for (const b of batches.slice(-12)) this.addMarker(b.seq, b.l1Block, b.l1Time, false)
   }
   layoutMarkers() {}
   onAssertion(a: Assertion, confirmed: boolean) {
-    const blk = confirmed ? a.confirmedBlock! : a.createdBlock!
+    const t = confirmed ? a.confirmedTime! : a.createdTime!
     const m = h('div', { class: 'marker asrt' + (confirmed ? ' ok' : ''), html: `<div class="sq"></div>${confirmed ? 'confirmed' : 'created'}` })
-    const dx = (this.l1Head - blk) * (this.L1_SPEED * 1000)
-    m.dataset.x = String(this.l1NowX() - dx)
+    m.dataset.x = String(this.xForL1Time(t))
     at(m, this.TRACK_R, this.L1Y - 58); this.markers.append(m)
     gsap.fromTo(m, { opacity: 0, scale: 1.8 }, { opacity: 1, scale: 1, duration: .6, ease: 'back.out(2)' })
     this.renderAssertions()

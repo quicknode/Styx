@@ -60,7 +60,7 @@ export function batchesTab() {
     const med = delays.length ? [...delays].sort((a, b) => a - b)[Math.floor(delays.length / 2)] : 0
     facts.set([
       { k: 'newest batch', v: last ? `#${last.seq}` : '—', s: last ? `landed ${fmtTime(last.l1Time)}` : '' },
-      { k: 'cadence', v: `every ${fmtAge(s.health.batches.medianInterval)}`, s: 'median of the last 12' },
+      { k: 'cadence', v: s.health.batches.medianInterval ? `every ${fmtAge(s.health.batches.medianInterval)}` : 'measuring', s: s.health.batches.medianInterval ? 'median of the last 12' : 'needs two batches' },
       { k: 'typical posting delay', v: med ? fmtAge(med) : '—', s: 'last block to HyperEVM inclusion' },
       { k: 'data availability', v: last?.daMode === 'anytrust' ? 'AnyTrust <em>cert</em>' : last?.daMode ?? '—', s: last ? `header ${last.daHeader} · ${last.dataBytes} bytes` : '' },
     ])

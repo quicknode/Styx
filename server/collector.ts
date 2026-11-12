@@ -63,8 +63,13 @@ export class Collector extends EventEmitter {
 
   /** Rollup confirmPeriodBlocks, in parent-chain blocks (HyperEVM ≈ 1 s each). */
   confirmPeriodBlocks = 0
-  async start() {
+  async readConfirmPeriod() {
+    if (this.confirmPeriodBlocks) return
     try { const r = await this.l1.call<string>('eth_call', [{ to: this.net.contracts.rollup, data: '0x2e7acfa6' }, 'latest']); this.confirmPeriodBlocks = Number(BigInt(r)); console.log(`[collector] ${this.net.name}: confirmPeriodBlocks = ${this.confirmPeriodBlocks}`) } catch (e) { console.warn('[collector] confirmPeriodBlocks', (e as Error).message) }
+  }
+  async start() {
+    await this.readConfirmPeriod()
+    if (!this.confirmPeriodBlocks) setInterval(() => void this.readConfirmPeriod(), 30000)
     this.l1Head = await this.l1.blockNumber()
     const from = Math.max(1, this.l1Head - this.backfillBlocks)
     console.log(`[collector] ${this.net.name}: backfilling HyperEVM ${from}..${this.l1Head}`)
@@ -314,9 +319,9 @@ export class Collector extends EventEmitter {
     const bs = [...this.batches.values()].sort((a, b) => a.seq - b.seq)
     const last = bs.at(-1)
     const gaps = bs.slice(-12).map((b, i, arr) => (i ? b.l1Time - arr[i - 1].l1Time : 0)).filter(Boolean)
-    const med = gaps.length ? median(gaps) : this.net.seedBatchInterval
+    const med = gaps.length ? median(gaps) : 0
     const lastBatchAge = last ? now - last.l1Time : 1e9
-    const batchState = !last ? 'unknown' : lastBatchAge < med * 2 ? 'live' : lastBatchAge < med * 4 ? 'pending' : 'failure'
+    const batchState: HealthState = !last || !med ? 'unknown' : lastBatchAge < med * 2 ? 'live' : lastBatchAge < med * 4 ? 'pending' : 'failure'
 
     const mode: DaMode = last?.daMode ?? 'unknown'
     const dataState = mode === 'anytrust' ? 'live' : mode === 'fulldata' ? 'pending' : mode === 'blob' ? 'live' : 'unknown'
@@ -330,12 +335,12 @@ export class Collector extends EventEmitter {
     const open = openList.length
     // A claim can only confirm after the challenge window (confirmPeriodBlocks parent blocks, ~1 s each on HyperEVM).
     // "On time" means no open claim is older than the window plus a grace period. Many open claims is normal when the window is long.
-    const period = this.confirmPeriodBlocks > 0 ? this.confirmPeriodBlocks : this.net.name === 'testnet' ? 10 : 86400
+    const period = this.confirmPeriodBlocks
     const grace = Math.max(1800, period * 0.25)
     const oldestOpenAge = openList.length ? now - openList[0].createdTime! : 0
-    const aState: HealthState = !as.length ? 'unknown' : oldestOpenAge <= period + grace ? 'live' : oldestOpenAge <= period + 2 * grace ? 'pending' : 'failure'
+    const aState: HealthState = !as.length || !period ? 'unknown' : oldestOpenAge <= period + grace ? 'live' : oldestOpenAge <= period + 2 * grace ? 'pending' : 'failure'
     const nextDue = openList.length ? Math.max(0, period - oldestOpenAge) : 0
-    const periodLabel = period >= 3600 ? `${Math.round(period / 3600)} h window` : `${period} s window`
+    const periodLabel = !period ? 'window unknown' : period >= 3600 ? `${Math.round(period / 3600)} h window` : `${period} s window`
     const aDetail = aState === 'live'
       ? `${periodLabel} · ${open} open${openList.length ? ` · next due ${nextDue > 60 ? 'in ' + fmtAge(nextDue) : 'now'}` : ''}`
       : `${periodLabel} · oldest open ${fmtAge(oldestOpenAge)} · ${open} open`
@@ -344,14 +349,14 @@ export class Collector extends EventEmitter {
     const sentence = [
       head ? `Elysium is producing a block every ${Math.round(interval)} ms.` : 'Waiting for Elysium blocks.',
       last ? `The last batch landed on HyperEVM ${fmtAge(lastBatchAge)} ago${mode === 'anytrust' ? ' carrying an AnyTrust certificate' : mode === 'fulldata' ? ' with full data, the committee fallback' : ''}${this.unbatchedSeconds() > 300 ? `, and batching is running ${fmtAge(this.unbatchedSeconds())} behind the chain head` : ''}.` : '',
-      openList.length ? `${open} state claim${open === 1 ? '' : 's'} inside the ${periodLabel.replace(' window', '')} challenge window.` : '',
+      openList.length && period ? `${open} state claim${open === 1 ? '' : 's'} inside the ${periodLabel.replace(' window', '')} challenge window.` : openList.length ? `${open} state claim${open === 1 ? '' : 's'} open.` : '',
       hour || whour ? `${hour.toLocaleString('en-US')} deposits in, ${whour} withdrawals out, this hour.` : '',
 
     ].filter(Boolean).join(' ')
 
     return {
       sequencer: { state: seqState, headAge, blockInterval: interval, detail: head ? `block ${head.number.toLocaleString('en-US')} · ${Math.round(interval)} ms` : 'no heads' },
-      batches: { state: batchState, lastBatchAge, medianInterval: med, detail: last ? `#${last.seq} · ${fmtAge(lastBatchAge)} ago · every ${fmtAge(med)}` : 'none yet' },
+      batches: { state: batchState, lastBatchAge, medianInterval: med, detail: last ? `#${last.seq} · ${fmtAge(lastBatchAge)} ago${med ? ` · every ${fmtAge(med)}` : ' · measuring cadence'}` : 'none yet' },
       data: { state: dataState, mode, detail: dataDetail },
       assertions: { state: aState, lastConfirmedAge, openCount: open, confirmPeriod: period, detail: aDetail },
       sentence,

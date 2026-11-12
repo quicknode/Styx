@@ -17,8 +17,6 @@ export interface NetworkConfig {
     sequencerInbox: string
   }
   explorer: { elysium: string; hyperevm: string }
-  /** Typical batch interval observed, seconds. Used only to seed health thresholds before data arrives. */
-  seedBatchInterval: number
 }
 
 const env = (k: string) => {
@@ -43,7 +41,6 @@ export const NETWORKS: Record<NetworkName, () => NetworkConfig> = {
       sequencerInbox: '0x7f3Ff53aecB87261206ad3bDc27A88b6D8420fa6',
     },
     explorer: { elysium: 'https://elysium.kinetiq.xyz/explorer', hyperevm: 'https://hyperevmscan.io' },
-    seedBatchInterval: 120,
   }),
   testnet: () => ({
     name: 'testnet',
@@ -60,7 +57,6 @@ export const NETWORKS: Record<NetworkName, () => NetworkConfig> = {
       sequencerInbox: '0xb5B1a0AebfFeF819Ec3F8c39a17b5C4E70A001E3',
     },
     explorer: { elysium: 'https://elysium.kinetiq.xyz/testnet-explorer', hyperevm: 'https://testnet.purrsec.com' },
-    seedBatchInterval: 900,
   }),
 }
 
