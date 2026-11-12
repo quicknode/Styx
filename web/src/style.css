@@ -25,8 +25,9 @@ html, body { height: 100%; background: #0e0e0d; color: var(--ink); font-family: 
 #trk-big:focus { border-color: var(--ely-ink); }
 .hp { cursor: pointer; } .hp:hover .k { color: var(--ink); }
 #toprule { position: absolute; left: 72px; right: 72px; top: 96px; height: 1px; background: var(--rule); transform-origin: left; }
-#eyebrow { display: flex; align-items: center; height: 40px; font-family: var(--serif); font-size: 28px; letter-spacing: -.01em; color: var(--ink); white-space: nowrap; }
-#eyebrow b { font-weight: 400; }
+#eyebrow { display: flex; align-items: baseline; height: 40px; white-space: nowrap; }
+#eyebrow .brand { font-family: var(--serif); font-weight: 400; font-size: 34px; line-height: 40px; letter-spacing: -.02em; color: var(--ink); }
+#eyebrow .sub { margin-left: 18px; padding-left: 18px; border-left: 1px solid var(--rule-strong); font-family: var(--mono); font-size: 12.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-50); line-height: 16px; }
 #lockup { position: absolute; left: 72px; top: 1030px; display: flex; align-items: center; gap: 22px; z-index: 4; }
 #lockup img { display: block; } #lockup .lk-ely { height: 24px; } #lockup .lk-qn { height: 19px; } #lockup .lk-x { width: 1px; height: 22px; background: var(--rule-strong); }
 
@@ -132,7 +133,7 @@ svg text.ink { fill: var(--ink); } svg text.ely { fill: var(--ely-ink); } svg te
 @keyframes pulse { 50% { opacity: .35; } }
 
 /* ---------- tabs ---------- */
-#tabs { position: relative; display: flex; align-items: center; gap: 6px; height: 40px; margin-left: 96px; margin-right: auto; }
+#tabs { position: relative; display: flex; align-items: center; gap: 6px; height: 40px; margin-left: 72px; margin-right: auto; }
 .tab { position: relative; height: 40px; padding: 0 16px; border: 0; background: transparent; font-family: var(--mono); font-size: 14px; transition: color .2s; letter-spacing: .13em; text-transform: uppercase; color: var(--ink-50); cursor: pointer; }
 .tab .tk { margin-left: 8px; font-size: 10px; color: var(--ink-30); border: 1px solid var(--rule); padding: 1px 4px; }
 .tab:hover { color: var(--ink); } .tab.on { color: var(--ink); }

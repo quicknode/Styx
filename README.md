@@ -1,4 +1,6 @@
-# Elysium Settlement Monitor
+# Styx
+
+Elysium Settlement Monitor. Named for the river you cross to reach Elysium: every deposit and withdrawal crosses it, and this app watches the crossing.
 
 A live, visual view of how Elysium settles to HyperEVM. Blocks tick into batches, batches land on HyperEVM as AnyTrust certificates, assertions get created and confirmed, deposits and withdrawals cross the bridge, and a health strip says whether the sequencer is up, batches are current, data is available, and assertions are confirming. Paste any Elysium transaction hash and watch it climb the ladder: included, batched, confirmed on HyperEVM, asserted.
 
