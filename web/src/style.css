@@ -344,6 +344,7 @@ svg text.ink { fill: var(--ink); } svg text.ely { fill: var(--ely-ink); } svg te
 .trk-links { position: absolute; display: flex; gap: 28px; font-family: var(--mono); font-size: 14px; letter-spacing: .04em; }
 
 /* ---------- motion polish ---------- */
+.col { position: absolute; transform-origin: bottom; will-change: transform; }
 .chart-guide { position: absolute; top: 0; bottom: 28px; width: 1px; background: var(--ink); opacity: 0; pointer-events: none; transition: opacity .15s; }
 .bar.newest { box-shadow: 0 0 0 1px var(--paper) inset; }
 .trk-pending { fill: none; stroke: var(--ely-ink); stroke-width: 2; stroke-dasharray: 6 8; animation: march 1s linear infinite; opacity: .6; }

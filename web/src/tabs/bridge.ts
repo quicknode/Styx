@@ -64,19 +64,27 @@ export function bridgeTab() {
     const bw = CW / hist.length
     const nextH = new Map<string, number>()
     hist.forEach((m, i) => {
-      let y = 0
+      // one column per bucket: segments stack inside it, and the column itself scales up from the baseline
+      const col = at(h('div', { class: 'col' }), i * bw + 1, 0, Math.max(1, bw - 2), CH - 28)
+      col.style.top = ''; col.style.bottom = '28px'
+      let y = 0; let total = 0; let changed = false
       for (const k of kinds) {
         const v = m[k]; if (!v) continue
         const hgt = (v / max) * (CH - 60)
         const key = `${m.minute}:${k}`; nextH.set(key, hgt)
-        const bar = at(h('div', { class: 'bar ' + KC[k] + (i === hist.length - 1 ? ' newest' : '') }), i * bw + 1, 0, Math.max(1, bw - 2), hgt)
-        bar.style.top = ''; bar.style.bottom = (28 + y) + 'px'
+        const bar = at(h('div', { class: 'bar ' + KC[k] + (i === hist.length - 1 ? ' newest' : '') }), 0, 0, Math.max(1, bw - 2), hgt)
+        bar.style.top = ''; bar.style.bottom = y + 'px'; bar.style.left = '0'
         tooltip(bar, () => `<b>${fmtTime(m.minute * 60)}${B > 1 ? ' +15 min' : ''}</b><br>${kinds.map((kk) => `${KL[kk]}: ${m[kk]}`).join('<br>')}`)
-        bars.append(bar); y += hgt
-        // quick and smooth: grow from the previous height for this minute, from zero for a new one
-        const from = animate ? 0 : (prevH.get(key) ?? 0)
-        if (Math.abs(from - hgt) > .5) gsap.fromTo(bar, { height: from }, { height: hgt, duration: animate ? .35 : .25, delay: animate ? i * .003 : 0, ease: 'power3.out', overwrite: true })
+        col.append(bar); y += hgt; total += hgt
+        const from = prevH.get(key)
+        if (!animate && from !== undefined && Math.abs(from - hgt) > .5) { changed = true; gsap.fromTo(bar, { height: from }, { height: hgt, duration: .25, ease: 'power3.out', overwrite: true }) }
+        if (!animate && from === undefined) changed = true
       }
+      if (!total) return
+      bars.append(col)
+      const isNew = !animate && ![...prevH.keys()].some((k) => k.startsWith(`${m.minute}:`))
+      if (animate || isNew) gsap.fromTo(col, { scaleY: 0 }, { scaleY: 1, duration: animate ? .35 : .25, delay: animate ? i * .003 : 0, ease: 'power3.out', overwrite: true })
+      void changed
     })
     prevH.clear(); for (const [k, v] of nextH) prevH.set(k, v)
     const sum = (k: Kind) => hist.reduce((a, m) => a + m[k], 0)
