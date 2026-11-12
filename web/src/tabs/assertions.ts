@@ -15,7 +15,7 @@ export function assertionsTab() {
   titleRow(el, 'State claims, <em>posted then confirmed</em>.')
   const legend = at(h('div', { class: 'legend' }), 72, 60, 1300); legend.style.justifyContent = 'flex-start'; el.append(legend)
   legend.innerHTML = '<span><i class="lg lg-ink"></i>posted → confirmed</span><span><i class="lg lg-wait"></i>open, inside its window</span><span><i class="lg lg-amber"></i>open, past its window</span><span><i class="lg lg-dash"></i>window ends</span>'
-  const CH = ROW.heroH, CW = 1776, SPAN = 48 * 3600, BASE = CH - 28
+  const CH = ROW.heroH, CW = 1776, PAST = 48 * 3600, FUTURE = 12 * 3600, SPAN = PAST + FUTURE, BASE = CH - 28
   const chart = hero(el, CH); chart.setAttribute('role', 'img'); chart.setAttribute('aria-label', 'State claims over the last 48 hours, one row each, from posting to confirmation')
   const axis = layer(CW, CH); chart.append(axis)
   const rows = h('div', { style: 'position:absolute;inset:0', role: 'list' }); chart.append(rows)
@@ -27,17 +27,20 @@ export function assertionsTab() {
   function draw(force = false) {
     const s = state.snapshot; if (!s) return
     const now = s.now; const win = s.health.assertions.confirmPeriod
-    const list = s.assertions.filter((a) => (a.createdTime && now - a.createdTime <= SPAN) || (a.confirmedTime && now - a.confirmedTime <= SPAN))
+    const list = s.assertions.filter((a) => (a.createdTime && now - a.createdTime <= PAST) || (a.confirmedTime && now - a.confirmedTime <= PAST))
       .sort((a, b) => (a.createdTime ?? a.confirmedTime!) - (b.createdTime ?? b.confirmedTime!))
     const nsig = list.map((a) => `${a.hash.slice(0, 8)}.${a.confirmedTime ?? 0}`).join(',') + ':' + Math.floor(now / 300)
     if (!force && nsig === sig) { drawFacts(); if (insp.open) drawInspector(); return }
     const animate = force || !sig
     sig = nsig
     rows.innerHTML = ''; axis.innerHTML = ''
-    const x = (t: number) => Math.max(0, Math.min(CW, CW - ((now - t) / SPAN) * CW))
+    const x = (t: number) => Math.max(0, Math.min(CW, ((t - (now - PAST)) / SPAN) * CW))
+    const NOWX = x(now)
+    axis.append(svg('rect', { x: NOWX, y: 24, width: CW - NOWX, height: BASE - 24, fill: 'rgba(20,20,20,.035)' }))
     axis.append(svg('path', { class: 'hair2', d: `M 0 ${BASE} H ${CW}` }))
-    for (let hrs = 0; hrs <= 48; hrs += 8) { const xx = x(now - hrs * 3600); axis.append(svg('path', { class: 'hair2', d: `M ${xx} ${BASE} V ${BASE + 8}` })); axis.append(txt(xx, BASE + 22, hrs ? `−${hrs} h` : 'now', hrs ? '' : 'ink', hrs === 48 ? 'start' : hrs ? 'middle' : 'end')) }
-    axis.append(svg('path', { class: 'ln dash', d: `M ${CW} 24 V ${BASE}`, style: 'stroke:var(--ink);opacity:.35' }))
+    for (let hrs = -12; hrs <= 48; hrs += 6) { const xx = x(now - hrs * 3600); axis.append(svg('path', { class: 'hair2', d: `M ${xx} ${BASE} V ${BASE + 8}` })); axis.append(txt(xx, BASE + 22, hrs > 0 ? `−${hrs} h` : hrs < 0 ? `+${-hrs} h` : 'now', hrs ? '' : 'ink', hrs === 48 ? 'start' : hrs === -12 ? 'end' : 'middle')) }
+    axis.append(svg('path', { class: 'ln', d: `M ${NOWX} 24 V ${BASE}`, style: 'stroke:var(--ink);stroke-width:1.5' }))
+    axis.append(txt(NOWX + 8, 36, 'next 12 h', ''))
     if (!list.length) { axis.append(txt(0, 16, 'no claims in the last 48 h', '')); return }
     const n = list.length; const rowH = Math.max(6, Math.min(14, (BASE - 40) / n)); const barH = Math.max(4, rowH - 2)
     axis.append(txt(0, 16, `${n} claims in 48 h · newest at the bottom`, ''))
@@ -56,7 +59,7 @@ export function assertionsTab() {
         const bar = at(h('div', { class: 'claim open' + (sel ? ' sel' : ''), role: 'listitem', tabindex: '0', 'aria-label': `Claim ${short(a.hash)}, posted ${a.createdTime ? fmtClock(a.createdTime) : 'earlier'}, open` }), x0, y, openW, barH)
         wire(bar, a); rows.append(bar)
         if (overdue) { const late = at(h('div', { class: 'claim late' + (sel ? ' sel' : '') }), x(end), y, Math.max(3, x(now) - x(end)), barH); late.style.pointerEvents = 'none'; rows.append(late) }
-        else if (win > 0) { axis.append(svg('path', { class: 'hair2 dash', d: `M ${x(now)} ${y + barH / 2} H ${Math.min(CW, x0 + ((win) / SPAN) * CW)}` })) }
+        else if (win > 0) { const ex = x(end); axis.append(svg('path', { class: 'hair2 dash', d: `M ${x(now)} ${y + barH / 2} H ${ex}` })); axis.append(svg('path', { class: 'ln', d: `M ${ex} ${y} V ${y + barH}`, style: 'stroke:var(--ink)' })) }
       }
     })
     if (animate) gsap.fromTo(Array.from(rows.children), { scaleX: 0, transformOrigin: 'left center' }, { scaleX: 1, duration: .4, stagger: .012, ease: 'power3.out' })
