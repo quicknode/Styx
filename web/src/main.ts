@@ -19,7 +19,6 @@ const stage = document.getElementById('stage')!
 const netname = document.getElementById('netname')!
 
 const tabs = new Tabs(document.getElementById('tabs')!, stage)
-document.getElementById('netswitch')!.setAttribute('role', 'group'); document.getElementById('netswitch')!.setAttribute('aria-label', 'Network')
 const live = liveTab((id) => tabs.show(id))
 const batches = batchesTab(); const asserts = assertionsTab(); const bridge = bridgeTab(); const track = trackTab(); const network = networkTab()
 const home = homeTab((id) => tabs.show(id), (hash) => track.lookup(hash))
@@ -35,8 +34,9 @@ gsap.from('#toprule', { scaleX: 0, duration: 1.2, ease: 'power3.out' })
 gsap.from('#top', { opacity: 0, y: 8, duration: .9, ease: 'power3.out' })
 
 // ---- network switch ----
-const sw = document.getElementById('netswitch')!
-function paintNet() { for (const b of Array.from(sw.querySelectorAll('button')) as HTMLButtonElement[]) b.classList.toggle('on', b.dataset.net === state.net); netname.textContent = `Elysium ${state.net}` }
+const sel = document.getElementById('netsel') as HTMLSelectElement
+const livedot = document.getElementById('livedot')!
+function paintNet() { sel.value = state.net; netname.textContent = state.net }
 let disconnect: (() => void) | null = null
 function applySnapshot(s: Snapshot) {
   state.snapshot = s
@@ -48,6 +48,7 @@ function start(net: Net) {
   state.onNet.emit(net)
   fetchSnapshot(net).then((s) => { if ((s as any).network) applySnapshot(s) }).catch(() => {})
   disconnect = connect(net, {
+    status: (ok) => livedot.classList.toggle('off', !ok),
     snapshot: applySnapshot,
     head: (hd) => state.onHead.emit(hd),
     l1head: (number, timestamp) => state.onL1Head.emit({ number, timestamp }),
@@ -61,8 +62,9 @@ function start(net: Net) {
   const tab = tabs.current?.id ?? tabs.fromHash()
   location.hash = `tab=${tab}&net=${net}`
 }
-sw.addEventListener('click', (e) => { const b = (e.target as HTMLElement).closest('button') as HTMLButtonElement | null; if (b?.dataset.net && b.dataset.net !== state.net) start(b.dataset.net as Net) })
-fetchNetworks().then((r) => { for (const b of Array.from(sw.querySelectorAll('button')) as HTMLButtonElement[]) b.disabled = !r.networks.includes(b.dataset.net as Net); if (!r.networks.includes(state.net) && r.networks[0]) state.net = r.networks[0]; start(state.net) }).catch(() => start(state.net))
+sel.addEventListener('change', () => { if (sel.value !== state.net) start(sel.value as Net) })
+fetchNetworks().then((r) => { for (const o of Array.from(sel.options)) o.disabled = !r.networks.includes(o.value as Net); if (!r.networks.includes(state.net) && r.networks[0]) state.net = r.networks[0]; start(state.net) }).catch(() => start(state.net))
+state.onSnapshot.on((s) => livedot.classList.toggle('off', s.health.sequencer.state === 'failure'))
 
 /** A soft paper flash on settlement events, the way a stamp lands. */
 function flash() { const f = document.createElement('div'); f.style.cssText = 'position:absolute;inset:0;background:var(--ely);opacity:0;pointer-events:none;z-index:9'; deck.append(f); gsap.to(f, { opacity: .08, duration: .12, yoyo: true, repeat: 1, onComplete: () => f.remove() }) }

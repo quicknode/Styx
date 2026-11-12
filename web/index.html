@@ -13,17 +13,20 @@
     <div id="frame">
       <div id="deck">
         <div id="top">
-          <div id="eyebrow"><b>// Settlement monitor</b><span id="netname">Elysium</span></div>
+          <div id="eyebrow"><span id="livedot" aria-hidden="true"></span><b>Elysium Settlement Monitor</b><span id="netname" class="sr">mainnet</span></div>
           <div id="tabs"></div>
-          <div id="lockup">
-            <div id="netswitch"><button data-net="mainnet">Mainnet</button><button data-net="testnet">Testnet</button></div>
-            <img class="lk-ely" src="/brand/elysium-wordmark-dark.svg" alt="Elysium" />
-            <span class="lk-x"></span>
-            <img class="lk-qn" src="/brand/qn-wordmark-dark.svg" alt="Quicknode" />
+          <div id="netswitch">
+            <label class="sr" for="netsel">Network</label>
+            <select id="netsel"><option value="mainnet">Mainnet</option><option value="testnet">Testnet</option></select>
           </div>
         </div>
         <div id="toprule"></div>
         <div id="stage"></div>
+        <div id="lockup">
+          <img class="lk-ely" src="/brand/elysium-wordmark-dark.svg" alt="Elysium" />
+          <span class="lk-x"></span>
+          <img class="lk-qn" src="/brand/qn-wordmark-dark.svg" alt="Quicknode" />
+        </div>
         <div id="keys" aria-hidden="true">1–7 tabs · / search · p pause</div>
       </div>
     </div>
