@@ -7,7 +7,7 @@ import { fmtTime, short, type Batch } from '../api'
 
 type Metric = 'fee' | 'gas' | 'price'
 const LABEL: Record<Metric, string> = { fee: 'fee per batch', gas: 'gas per batch', price: 'gas price' }
-const hype = (x: number) => x >= 1 ? `${x.toFixed(3)} HYPE` : x >= 0.001 ? `${x.toFixed(4)} HYPE` : `${(x * 1e6).toFixed(1)} µHYPE`
+const hype = (x: number) => x >= 1 ? `${x.toFixed(3)} HYPE` : x >= 0.001 ? `${x.toFixed(4)} HYPE` : x >= 1e-6 ? `${(x * 1e6).toFixed(1)} µHYPE` : `${(x * 1e9).toFixed(1)} nHYPE`
 
 /** Bill: what it costs to settle Elysium on HyperEVM, read from each batch transaction's receipt. */
 export function billTab() {
@@ -22,7 +22,7 @@ export function billTab() {
   const bars = h('div', { style: 'position:absolute;inset:0', role: 'list' }); chart.append(bars)
   const facts = new Facts(el)
   const insp = new Inspector(el, facts)
-  const note = at(h('p', { class: 'home-next' }, 'Every batch is one HyperEVM transaction from the batch poster. Fee = gas used × effective gas price, from the receipt. Assertion and bridge transactions are not included.'), 72, ROW.facts + 124, CW); el.append(note)
+  const note = at(h('p', { class: 'home-next' }, 'Every batch is one HyperEVM transaction from the batch poster. Fee = gas used × effective gas price, from the receipt. Assertion and bridge transactions are not included.'), 72, ROW.facts + 230, CW); el.append(note)
   const value = (b: Batch) => metric === 'fee' ? (b.feeHype ?? -1) : metric === 'gas' ? (b.gasUsed ?? -1) : (b.gasPriceGwei ?? -1)
   const fmtV = (v: number) => metric === 'fee' ? hype(v) : metric === 'gas' ? `${Math.round(v).toLocaleString('en-US')} gas` : `${v.toFixed(3)} gwei`
   let list: Batch[] = []; let sig = ''; let shownSeq = -1
