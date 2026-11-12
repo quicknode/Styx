@@ -16,7 +16,7 @@ export function batchesTab() {
   const el = h('div')
   let mode: Mode = 'blocks'
   const { controls } = titleRow(el, 'Blocks into <em>batches</em>.')
-  const legend = at(h('div', { class: 'legend' }), 72, 10, 900); legend.style.justifyContent = 'flex-start'; el.append(legend)
+  const legend = at(h('div', { class: 'legend' }), 72, 60, 1100); legend.style.justifyContent = 'flex-start'; el.append(legend)
   const chips: Record<Mode, HTMLButtonElement> = { blocks: chip('by blocks', 'on ely'), time: chip('by time', 'ely') }
   ;(Object.keys(chips) as Mode[]).forEach((m) => { chips[m].setAttribute('aria-pressed', String(m === mode)); chips[m].addEventListener('click', () => { mode = m; for (const k of Object.keys(chips) as Mode[]) { chips[k].classList.toggle('on', k === m); chips[k].setAttribute('aria-pressed', String(k === m)) } draw(true) }); controls.append(chips[m]) })
   const CH = ROW.heroH, CW = 1776
@@ -89,7 +89,7 @@ export function batchesTab() {
     const yOf = (n: number) => (n / max) * (CH - 64)
     // bar width from the tightest gap between neighbours, so bars never overlap
     const gaps = list.slice(1).map((b, i) => x(b.l1Time) - x(list[i].l1Time))
-    const BW = Math.max(4, Math.min(22, Math.floor(Math.min(...gaps, 22)) - 2))
+    const BW = Math.max(6, Math.min(22, Math.floor(Math.min(...gaps, 22)) - 2))
     axis.append(svg('path', { class: 'hair2', d: `M 0 ${CH - 28} H ${CW}` }))
     ;[0.5, 1].forEach((f) => { const y = CH - 28 - (CH - 64) * f; axis.append(svg('path', { class: 'hair', d: `M 0 ${y} H ${CW}` })); axis.append(txt(0, y - 6, `${Math.round(max * f).toLocaleString('en-US')} blocks`)) })
     for (let hrs = 0; hrs <= 24; hrs += 4) { const xx = x(now - hrs * 3600); axis.append(svg('path', { class: 'hair2', d: `M ${xx} ${CH - 28} V ${CH - 20}` })); axis.append(txt(xx, CH - 6, hrs ? `−${hrs} h` : 'now', hrs ? '' : 'ink', hrs === 24 ? 'start' : hrs ? 'middle' : 'end')) }
