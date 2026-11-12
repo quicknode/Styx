@@ -11,7 +11,7 @@ const STAGES = [
   { t: 'Asserted', side: 'hl', d: 'The state claim covering it passed the challenge window.' },
 ]
 const W = 1776, RAIL_Y = 170, HERO_H = 300
-const SX = [120, 640, 1136, 1656] // station x positions on the rail
+const SX = [160, 640, 1136, 1616] // station x positions on the rail
 
 /** Track: a journey from Elysium to HyperEVM. The marker sits at the stage the transaction has reached. */
 export function trackTab() {

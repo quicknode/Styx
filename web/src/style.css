@@ -336,7 +336,7 @@ svg text.ink { fill: var(--ink); } svg text.ely { fill: var(--ely-ink); } svg te
 .trk-station.done .name, .trk-station.here .name { color: var(--ink); }
 .trk-station .when { position: absolute; left: -140px; width: 280px; top: 76px; text-align: center; font-family: var(--mono); font-size: 13px; letter-spacing: .06em; color: var(--ely-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .trk-station.hl .when { color: var(--hl-ink); }
-.trk-station .desc { position: absolute; left: -130px; width: 260px; top: -92px; text-align: center; font-size: 14px; line-height: 1.45; color: var(--ink-50); }
+.trk-station .desc { position: absolute; left: -120px; width: 240px; top: -86px; text-align: center; font-size: 14px; line-height: 1.45; color: var(--ink-50); }
 .trk-marker { position: absolute; width: 18px; height: 18px; margin: -9px 0 0 -9px; background: var(--ink); border: 1.5px solid var(--paper); box-shadow: 0 0 0 1.5px var(--ink); z-index: 2; }
 .trk-ring { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; border: 1.5px solid var(--ely-ink); animation: trkring 1.8s ease-out infinite; pointer-events: none; }
 @keyframes trkring { 0% { transform: scale(.5); opacity: .9; } 100% { transform: scale(1.8); opacity: 0; } }
