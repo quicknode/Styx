@@ -59,7 +59,7 @@ function start(net: Net) {
   state.onNet.emit(net)
   fetchSnapshot(net).then((s) => { if ((s as any).network) applySnapshot(s) }).catch(() => {})
   disconnect = connect(net, {
-    status: (ok) => livedot.classList.toggle('off', !ok),
+    status: (ok) => { downSince = ok ? 0 : (downSince || Date.now()); paintDot() },
     snapshot: applySnapshot,
     head: (hd) => state.onHead.emit(hd),
     l1head: (number, timestamp) => state.onL1Head.emit({ number, timestamp }),
@@ -74,7 +74,11 @@ function start(net: Net) {
   location.hash = `tab=${tab}&net=${net}`
 }
 fetchNetworks().then((r) => { for (const li of Array.from(netmenu.children) as HTMLElement[]) li.setAttribute('aria-disabled', String(!r.networks.includes(li.dataset.net as Net))); if (!r.networks.includes(state.net) && r.networks[0]) state.net = r.networks[0]; start(state.net) }).catch(() => start(state.net))
-state.onSnapshot.on((s) => livedot.classList.toggle('off', s.health.sequencer.state === 'failure'))
+/** The dot means "this page is receiving live data". Red only after the stream has been down for 6 s or the sequencer has stalled, so a blip never flashes it. */
+let downSince = 0; let seqDown = false
+function paintDot() { const down = (downSince && Date.now() - downSince > 6000) || seqDown; livedot.classList.toggle('off', !!down); livedot.title = down ? (seqDown ? 'No new Elysium blocks for 20 s' : 'Reconnecting to the monitor') : 'Live: receiving Elysium blocks' }
+setInterval(paintDot, 1000)
+state.onSnapshot.on((s) => { seqDown = s.health.sequencer.state === 'failure'; paintDot() })
 
 /** A soft paper flash on settlement events, the way a stamp lands. */
 function flash() { const f = document.createElement('div'); f.style.cssText = 'position:absolute;inset:0;background:var(--ely);opacity:0;pointer-events:none;z-index:9'; deck.append(f); gsap.to(f, { opacity: .08, duration: .12, yoyo: true, repeat: 1, onComplete: () => f.remove() }) }
