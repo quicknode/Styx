@@ -2,7 +2,7 @@ import gsap from 'gsap'
 import { h, at, G } from '../dom'
 import { state } from '../state'
 import { tooltip } from '../ui'
-import { fetchSampleTx, fmtAge, type Health, type Snapshot } from '../api'
+import { fetchSampleTx, fmtAge, fmtAgeShort, type Health, type Snapshot } from '../api'
 
 const RULE: Record<string, string> = {
   sequencer: '<b>Live</b> while the newest Elysium block is under 4 s old.<br>Pending under 20 s. Failure beyond.',
@@ -43,8 +43,8 @@ export function homeTab(openTab: (id: string) => void, lookup: (hash: string) =>
     tooltip(root, () => `${state.snapshot ? `<b>${state.snapshot.health[it.key].detail}</b><br>` : ''}${RULE[it.key]}`)
     bar.append(root); items.set(it.key, { root, word, state: '' })
   }
-  const sentence = at(h('p', { class: 'home-detail' }, ''), G.x(1), 184, G.w(10)); el.append(sentence)
-  const next = at(h('p', { class: 'home-next' }, ''), G.x(1), 262, G.w(10)); el.append(next)
+  const sentence = at(h('p', { class: 'home-detail' }, ''), G.x(1), 184, G.w(12)); el.append(sentence)
+  const next = at(h('p', { class: 'home-next' }, ''), G.x(1), 240, G.w(10)); el.append(next)
 
   const rule = at(h('div', { class: 'hair-x' }), G.x(1), 352, G.w(12)); el.append(rule)
   const searchT = at(h('h3', { class: 'home-search-lbl', html: 'Where is my <em>transaction</em>?' }), G.x(1), 404); el.append(searchT)
@@ -72,13 +72,13 @@ export function homeTab(openTab: (id: string) => void, lookup: (hash: string) =>
     const n = (x: string) => `<b class="n">${x}</b>`
     const parts = [
       `Blocks every ${n(Math.round(s.elysium.blockInterval / 10) * 10 + ' ms')}.`,
-      last ? `Last batch landed ${n(fmtAge(now - last.l1Time))} ago${s.elysium.unbatchedSeconds > 300 ? `, batching ${n(fmtAge(s.elysium.unbatchedSeconds))} behind head` : ''}.` : '',
+      last ? `Last batch landed ${n(fmtAgeShort(now - last.l1Time))} ago${s.elysium.unbatchedSeconds > 300 ? `, batching ${n(fmtAgeShort(s.elysium.unbatchedSeconds))} behind head` : ''}.` : '',
       hh.assertions.openCount && hh.assertions.confirmPeriod ? `${n(String(hh.assertions.openCount))} state claim${hh.assertions.openCount === 1 ? '' : 's'} inside the ${n(Math.round(hh.assertions.confirmPeriod / 3600) + ' h')} challenge window.` : '',
     ].filter(Boolean).join(' ')
     const shape = parts.replace(/\d[\d,.]*/g, '#')
     sentence.innerHTML = parts
     if (shape !== lastShape) { lastShape = shape; gsap.fromTo(sentence, { opacity: .4 }, { opacity: 1, duration: .4 }) }
-    if (last && hh.batches.medianInterval) { const eta = hh.batches.medianInterval - (now - last.l1Time); next.textContent = eta > 30 ? `Next batch expected in about ${fmtAge(eta)}.` : 'Next batch expected any moment.' } else next.textContent = ''
+    if (last && hh.batches.medianInterval) { const eta = hh.batches.medianInterval - (now - last.l1Time); next.textContent = eta > 30 ? `Next batch expected in about ${fmtAgeShort(eta)}.` : 'Next batch expected any moment.' } else next.textContent = ''
   }
   state.onSnapshot.on(apply)
   state.onNet.on(() => { lastVerdict = ''; lastShape = ''; title.innerHTML = 'Checking the <em>chain</em>…'; title.className = 'verdict'; sentence.textContent = ''; next.textContent = '' })
