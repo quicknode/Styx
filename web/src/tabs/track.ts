@@ -121,9 +121,21 @@ export function trackTab() {
     if (r.assertion?.explorer) links.append(h('a', { class: 'lnk', target: '_blank', rel: 'noopener', href: r.assertion.explorer }, 'claim tx'))
   }
   const links = at(h('div', { class: 'trk-links' }), G.x(1), 690, G.w(12)); el.append(links)
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') void lookup(input.value) })
+  function reset() {
+    clearTimeout(timer); current = ''; reachedShown = -1
+    headline.innerHTML = 'Paste a hash to see where it is.'
+    stations.forEach((g) => { g.classList.remove('done', 'here'); (g.querySelector('.when') as HTMLElement).textContent = ''; (g.querySelector('.node') as HTMLElement).textContent = String(stations.indexOf(g) + 1) })
+    regions.forEach((r) => r.classList.remove('focus'))
+    progress.setAttribute('d', `M ${SX[0]} ${RAIL_Y} H ${SX[0]}`); pending.setAttribute('d', '')
+    gsap.to([marker, ring, packet], { opacity: 0, duration: .25 })
+    facts.set([]); links.innerHTML = ''
+  }
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') void lookup(input.value); if (e.key === 'Escape') { input.value = ''; reset() } })
   input.addEventListener('paste', () => setTimeout(() => void lookup(input.value), 10))
+  // the field's own × (type=search) and manual deletion both fire these
+  input.addEventListener('search', () => { if (!input.value.trim()) reset() })
+  input.addEventListener('input', () => { if (!input.value.trim() && current) reset() })
   sample.addEventListener('click', async () => { headline.textContent = 'Fetching a transaction from the newest batch…'; const r = await fetchSampleTx(state.net); if (r.hash) void lookup(r.hash); else headline.textContent = 'No batched block with transactions yet.' })
-  state.onNet.on(() => { current = ''; reachedShown = -1; input.value = ''; headline.textContent = 'Paste a hash to see where it is.'; stations.forEach((g) => g.classList.remove('done', 'here')); progress.setAttribute('d', `M ${SX[0]} ${RAIL_Y} H ${SX[0]}`); marker.style.opacity = '0'; ring.style.opacity = '0' })
+  state.onNet.on(() => { input.value = ''; reset() })
   return { el, onShow: () => gsap.fromTo([input, sample, headline, hero, facts.el], { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .45, stagger: .06, ease: 'power2.out', overwrite: true }), focus: () => input.focus(), lookup }
 }

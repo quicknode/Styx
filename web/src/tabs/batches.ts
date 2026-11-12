@@ -18,6 +18,7 @@ export function batchesTab() {
   const items = h('div', { style: 'position:absolute;inset:0', role: 'list' }); chart.append(items)
   const facts = new Facts(el)
   const insp = new Inspector(el, facts)
+  insp.onHide = () => { if (state.selectedBatch !== null) selectBatch(null) }
 
   const tip = (b: Batch) => `<b>batch #${b.seq}</b> · landed ${fmtTime(b.l1Time)}<br>${b.l2Blocks!.toLocaleString('en-US')} blocks · ${b.l2FirstBlock!.toLocaleString('en-US')} → ${b.l2LastBlock!.toLocaleString('en-US')}<br>${b.postingDelay !== undefined ? `its last block waited ${fmtAge(b.postingDelay)} to land` : 'posting delay resolving'}<br>${b.daMode === 'anytrust' ? 'AnyTrust certificate' : b.daMode} · ${b.dataBytes} bytes<br><span class="dim">click for details</span>`
 
@@ -88,7 +89,7 @@ export function batchesTab() {
     for (const n of Array.from(items.children)) n.classList.toggle('sel', (n as HTMLElement).getAttribute('aria-label')?.startsWith(`Batch ${b.seq},`) ?? false)
   }
   state.onSnapshot.on(() => { if (el.style.display !== 'none') draw() })
-  state.onSelectBatch.on((seq) => { if (el.style.display === 'none') return; if (seq === null) insp.hide(); else drawInspector() })
+  state.onSelectBatch.on((seq) => { if (el.style.display === 'none') return; if (seq === null) { insp.hide(); for (const n of Array.from(items.children)) n.classList.remove('sel') } else drawInspector() })
   state.onNet.on(() => { items.innerHTML = ''; sig = ''; insp.hide() })
   return { el, onShow: () => { draw(true); if (state.selectedBatch) drawInspector() } }
 }

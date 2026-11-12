@@ -49,7 +49,7 @@ export class Facts {
         if (!first && !stable) gsap.fromTo(v, { opacity: .3, y: 4 }, { opacity: 1, y: 0, duration: .4, ease: 'power2.out', overwrite: true })
       }
     })
-    for (let i = facts.length; i < 4; i++) this.items[i].className = 'fact empty'
+    for (let i = facts.length; i < 4; i++) { this.items[i].className = 'fact empty'; for (const c of ['.k', '.v', '.s']) (this.items[i].querySelector(c) as HTMLElement).textContent = '' }
   }
   show(on: boolean) { gsap.to(this.el, { opacity: on ? 1 : 0, y: on ? 0 : 6, duration: .3, ease: 'power2.out', onStart: () => { if (on) { this.el.style.pointerEvents = ''; this.el.style.visibility = 'visible' } }, onComplete: () => { if (!on) { this.el.style.pointerEvents = 'none'; this.el.style.visibility = 'hidden' } } }) }
 }
@@ -77,10 +77,12 @@ export class Inspector {
     if (!this.open) { this.open = true; this.facts.show(false); this.el.style.pointerEvents = ''; gsap.fromTo(this.el, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .35, delay: .15, ease: 'power2.out' }) }
     gsap.fromTo(this.body.children, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: .35, stagger: .05, ease: 'power2.out' })
   }
+  onHide?: () => void
   hide() {
     if (!this.open) return
     this.open = false; this.el.style.pointerEvents = 'none'
     gsap.to(this.el, { opacity: 0, y: 8, duration: .25 }); this.facts.show(true)
+    this.onHide?.()
   }
 }
 

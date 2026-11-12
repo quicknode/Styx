@@ -33,6 +33,7 @@ export function assertionsTab() {
   })
   const facts = new Facts(el)
   const insp = new Inspector(el, facts)
+  insp.onHide = () => { if (state.selectedAssertion !== null) selectAssertion(null) }
   const note = at(h('p', { class: 'home-next' }, ''), X0, ROW.facts + 236, CW); el.append(note)
 
   const tiles = new Map<string, HTMLElement>()
@@ -116,9 +117,11 @@ export function assertionsTab() {
     if (insp.open && shownHash === a.hash && shownState === st) return
     const rerender = insp.open && shownHash === a.hash
     shownHash = a.hash; shownState = st
+    const claim = a; const snap = s
     if (rerender) { const body = insp.body; body.innerHTML = ''; fill(body); return }
     insp.show(`claim ${short(a.hash)}`, fill)
     function fill(body: HTMLElement) {
+      const a = claim
       const coarse = (sec: number) => sec < 3600 ? `${Math.max(1, Math.round(sec / 60))} min` : `${(sec / 3600).toFixed(1)} h`
       body.append(
         ikv('posted', a.createdTime ? `${coarse(now - a.createdTime)} <em>ago</em>` : 'before <em>lookback</em>', a.createdTime ? fmtClock(a.createdTime) : 'older than 48 h'),
@@ -127,14 +130,14 @@ export function assertionsTab() {
         ikv('on hyperevm', `<span style="font-family:var(--mono);font-size:24px">${a.confirmedBlock ? 'block ' + a.confirmedBlock.toLocaleString('en-US') : a.createdBlock ? 'block ' + a.createdBlock.toLocaleString('en-US') : '—'}</span>`, ' '),
       )
       const l = body.lastElementChild!.querySelector('.s')!
-      if (a.createTx) l.append(link(`${s.network.explorer.hyperevm}/tx/${a.createTx}`, 'post tx'))
-      if (a.confirmTx) l.append(link(`${s.network.explorer.hyperevm}/tx/${a.confirmTx}`, 'confirm tx'))
+      if (a.createTx) l.append(link(`${snap.network.explorer.hyperevm}/tx/${a.createTx}`, 'post tx'))
+      if (a.confirmTx) l.append(link(`${snap.network.explorer.hyperevm}/tx/${a.confirmTx}`, 'confirm tx'))
       l.append(copyBtn(a.hash))
     }
     for (const [hash, t] of tiles) t.classList.toggle('sel', hash === a.hash)
   }
   state.onSnapshot.on(() => { if (el.style.display !== 'none') draw() })
-  state.onSelectAssertion.on((hsh) => { if (el.style.display === 'none') return; if (hsh === null) insp.hide(); else drawInspector() })
+  state.onSelectAssertion.on((hsh) => { if (el.style.display === 'none') return; if (hsh === null) { insp.hide(); for (const t of tiles.values()) t.classList.remove('sel') } else drawInspector() })
   state.onNet.on(() => { for (const t of tiles.values()) t.remove(); tiles.clear(); shownHash = ''; insp.hide() })
   // keep the fills and ages live between snapshots
   setInterval(() => { if (el.style.display !== 'none' && state.snapshot) { state.snapshot.now = Math.floor(Date.now() / 1000); draw() } }, 1000)
