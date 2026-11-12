@@ -14,7 +14,7 @@ export function batchesTab() {
   const el = h('div')
   titleRow(el, 'Blocks into <em>batches</em>.')
   const legend = at(h('div', { class: 'legend' }), 72 + 1776 - 980, 14, 980); el.append(legend)
-  legend.innerHTML = '<span><i class="lg seg"></i>width = blocks in the batch</span><span><i class="lg stem"></i>stem = posting delay</span><span><i class="lg wait"></i>not yet batched</span>'
+  legend.innerHTML = '<span><i class="lg seg"></i>width = blocks</span><span><i class="lg stem"></i>stem = posting delay</span><span><i class="lg wait"></i>hatched = waiting</span>'
   const CH = ROW.heroH, CW = 1776
   const RULER_Y = CH - 92, RULER_H = 44, STEM_BASE = RULER_Y - 12, STEM_MAX = 150
   const chart = hero(el, CH); chart.setAttribute('role', 'img'); chart.setAttribute('aria-label', 'Elysium blocks divided into batches')
