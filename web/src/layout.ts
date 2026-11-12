@@ -42,7 +42,12 @@ export class Facts {
       ;(it.querySelector('.k') as HTMLElement).textContent = f.k
       ;(it.querySelector('.s') as HTMLElement).textContent = f.s ?? ''
       it.className = 'fact ' + (f.cls ?? '')
-      if (v.innerHTML !== f.v) { v.innerHTML = f.v; gsap.fromTo(v, { opacity: .3, y: 4 }, { opacity: 1, y: 0, duration: .4, ease: 'power2.out' }) }
+      if (v.innerHTML !== f.v) {
+        const first = !v.innerHTML
+        const stable = f.v.replace(/\d[\d,.]*\s*(s|min|h|ms)?/g, '#') === v.innerHTML.replace(/\d[\d,.]*\s*(s|min|h|ms)?/g, '#')
+        v.innerHTML = f.v
+        if (!first && !stable) gsap.fromTo(v, { opacity: .3, y: 4 }, { opacity: 1, y: 0, duration: .4, ease: 'power2.out', overwrite: true })
+      }
     })
     for (let i = facts.length; i < 4; i++) this.items[i].className = 'fact empty'
   }
@@ -81,5 +86,7 @@ export class Inspector {
 
 /** Key / value column inside the inspector. */
 export function ikv(k: string, v: string, s = '') {
-  return h('div', { class: 'ikv' }, [h('div', { class: 'k' }, k), h('div', { class: 'v', html: v }), h('div', { class: 's', html: s })])
+  const el = h('div', { class: 'ikv' }, [h('div', { class: 'k' }, k), h('div', { class: 'v', html: v || '—' })])
+  if (s) el.append(h('div', { class: 's', html: s }))
+  return el
 }

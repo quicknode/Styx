@@ -16,8 +16,13 @@ export function assertionsTab() {
   const facts = new Facts(el)
   const insp = new Inspector(el, facts)
 
-  function draw() {
+  let sig = ''; let shownHash = ''
+  function draw(force = false) {
     const s = state.snapshot; if (!s) return
+    const nsig = s.assertions.map((a) => `${a.hash.slice(0, 10)}.${a.createdTime ?? 0}.${a.confirmedTime ?? 0}`).join(',') + ':' + Math.floor(s.now / 300)
+    if (!force && nsig === sig) { drawFacts(); if (insp.open) drawInspector(); return }
+    const animate = force || !sig
+    sig = nsig
     const now = s.now; const span = 24 * 3600; const x = (t: number) => TW - ((now - t) / span) * TW
     const MID = TH / 2
     sv.innerHTML = ''; dots.innerHTML = ''
@@ -40,7 +45,13 @@ export function assertionsTab() {
         if (a.createdTime && now - a.createdTime <= span) sv.append(svg('path', { class: 'ln dash', d: `M ${x(a.createdTime)} ${MID - 24} L ${x(a.confirmedTime)} ${MID + 24}` }))
       }
     }
-    gsap.from(dots.children, { scale: 0, duration: .5, stagger: .04, ease: 'back.out(2)', transformOrigin: 'center', overwrite: true })
+    if (animate) gsap.from(dots.children, { scale: 0, duration: .5, stagger: .04, ease: 'back.out(2)', transformOrigin: 'center', overwrite: true })
+    drawFacts(); if (insp.open) drawInspector()
+  }
+  function drawFacts() {
+    const s = state.snapshot; if (!s) return
+    const now = s.now
+    const list = s.assertions.filter((a) => a.createdTime || a.confirmedTime)
     const conf = list.filter((a) => a.confirmedTime).at(-1); const open = list.filter((a) => a.createdTime && !a.confirmedTime)
     const lags = list.filter((a) => a.createdTime && a.confirmedTime).map((a) => a.confirmedTime! - a.createdTime!)
     const med = lags.length ? [...lags].sort((p, q) => p - q)[Math.floor(lags.length / 2)] : 0
@@ -50,17 +61,18 @@ export function assertionsTab() {
       { k: 'typical confirmation lag', v: med ? fmtAge(med) : '—', s: 'created to confirmed, last 24 h' },
       { k: 'what this means', v: 'Withdrawals <em>wait</em>', s: 'for the claim covering them to confirm' },
     ])
-    if (insp.open) drawInspector()
   }
   function drawInspector() {
     const s = state.snapshot; const a = s?.assertions.find((x) => x.hash === state.selectedAssertion); if (!s || !a) return
     const now = s.now
+    if (insp.open && shownHash === a.hash) return
+    shownHash = a.hash
     insp.show(`assertion ${short(a.hash)}`, (body) => {
       body.append(
-        ikv('created', a.createdTime ? `${fmtAge(now - a.createdTime)} <em>ago</em>` : 'before lookback', a.createdTime ? fmtClock(a.createdTime) : ''),
+        ikv('created', a.createdTime ? `${fmtAge(now - a.createdTime)} <em>ago</em>` : 'before <em>lookback</em>', a.createdTime ? fmtClock(a.createdTime) : 'older than 24 h'),
         ikv('confirmed', a.confirmedTime ? `${fmtAge(now - a.confirmedTime)} <em>ago</em>` : '<em>pending</em>', a.confirmedTime ? fmtClock(a.confirmedTime) : 'waiting for the challenge window'),
-        ikv('lag', a.createdTime && a.confirmedTime ? fmtAge(a.confirmedTime - a.createdTime) : '—', 'created to confirmed'),
-        ikv('links', '', ''),
+        ikv('created to confirmed', a.createdTime && a.confirmedTime ? fmtAge(a.confirmedTime - a.createdTime) : a.confirmedTime ? 'creation not in view' : 'not yet', ''),
+        ikv('on hyperevm', `<span style="font-family:var(--mono);font-size:24px">${a.confirmedBlock ? 'block ' + a.confirmedBlock.toLocaleString('en-US') : a.createdBlock ? 'block ' + a.createdBlock.toLocaleString('en-US') : '—'}</span>`, ' '),
       )
       const l = body.lastElementChild!.querySelector('.s')!
       if (a.createTx) l.append(link(`${s.network.explorer.hyperevm}/tx/${a.createTx}`, 'create tx'))
@@ -71,6 +83,6 @@ export function assertionsTab() {
   }
   state.onSnapshot.on(() => { if (el.style.display !== 'none') draw() })
   state.onSelectAssertion.on((hsh) => { if (hsh === null) insp.hide(); else drawInspector() })
-  state.onNet.on(() => { dots.innerHTML = ''; insp.hide() })
-  return { el, onShow: () => { draw(); if (state.selectedAssertion) drawInspector() } }
+  state.onNet.on(() => { dots.innerHTML = ''; sig = ''; insp.hide() })
+  return { el, onShow: () => { draw(true); if (state.selectedAssertion) drawInspector() } }
 }

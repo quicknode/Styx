@@ -24,7 +24,7 @@ export function trackTab() {
     const li = h('li', { class: 'rung2' }, [
       h('div', { class: 'cb', 'aria-hidden': 'true' }, String(i + 1)),
       h('div', { class: 'rt' }, st.t),
-      h('div', { class: 'rs' }, ''),
+      h('div', { class: 'rs' }, '—'),
       h('div', { class: 'rd' }, st.d),
     ])
     at(li, i * (G.w(12) / 4), 0, G.w(12) / 4 - 32); ladder.append(li); return li
@@ -72,7 +72,7 @@ export function trackTab() {
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') void lookup(input.value) })
   input.addEventListener('paste', () => setTimeout(() => void lookup(input.value), 10))
   sample.addEventListener('click', async () => { status.textContent = 'Fetching a transaction from the newest batch…'; const r = await fetchSampleTx(state.net); if (r.hash) void lookup(r.hash); else status.textContent = 'No batched block with transactions yet.' })
-  state.onNet.on(() => { current = ''; input.value = ''; steps.forEach((c) => c.classList.remove('done', 'now')) })
+  state.onNet.on(() => { current = ''; input.value = ''; steps.forEach((c) => { c.classList.remove('done', 'now'); (c.querySelector('.rs') as HTMLElement).textContent = '—' }) })
   drawHistory()
   return { el, onShow: () => gsap.fromTo(steps, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .45, stagger: .08, ease: 'power2.out', overwrite: true }), focus: () => input.focus(), lookup }
 }

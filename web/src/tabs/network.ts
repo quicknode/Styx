@@ -20,7 +20,7 @@ export function networkTab() {
       { k: 'network', v: `Elysium <em>${s.network.name}</em>`, s: `chain ${s.network.elysiumChainId} · settles to HyperEVM ${s.network.hyperevmChainId}` },
       { k: 'block interval', v: `${Math.round(s.elysium.blockInterval)} <em>ms</em>`, s: 'measured over the last 120 heads' },
       { k: 'batch cadence', v: `every ${fmtAge(s.health.batches.medianInterval)}`, s: 'median of the last 12' },
-      { k: 'parent lag', v: `${s.elysium.l1Lag} <em>blocks</em>`, s: 'HyperEVM head minus what Elysium has seen' },
+      { k: 'parent lag', v: `${s.elysium.l1Lag} <em>blocks</em>`, s: 'HyperEVM blocks Elysium has not seen yet' },
     ])
     list.innerHTML = ''
     for (const [k, addr] of Object.entries(s.network.contracts)) {

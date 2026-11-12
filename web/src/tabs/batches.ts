@@ -14,7 +14,7 @@ export function batchesTab() {
   let metric: Metric = 'delay'
   const { controls } = titleRow(el, 'Every batch, <em>as it landed</em>.')
   const chips: Record<Metric, HTMLButtonElement> = { delay: chip(LABEL.delay, 'on ely'), blocks: chip(LABEL.blocks, 'ely'), bytes: chip(LABEL.bytes, 'ely') }
-  ;(Object.keys(chips) as Metric[]).forEach((k) => { chips[k].setAttribute('aria-pressed', String(k === metric)); chips[k].addEventListener('click', () => { metric = k; for (const kk of Object.keys(chips) as Metric[]) { chips[kk].classList.toggle('on', kk === k); chips[kk].setAttribute('aria-pressed', String(kk === k)) } draw() }); controls.append(chips[k]) })
+  ;(Object.keys(chips) as Metric[]).forEach((k) => { chips[k].setAttribute('aria-pressed', String(k === metric)); chips[k].addEventListener('click', () => { metric = k; for (const kk of Object.keys(chips) as Metric[]) { chips[kk].classList.toggle('on', kk === k); chips[kk].setAttribute('aria-pressed', String(kk === k)) } draw(true) }); controls.append(chips[k]) })
 
   const CH = ROW.heroH
   const chart = hero(el, CH); chart.setAttribute('role', 'img'); chart.setAttribute('aria-label', 'Bar chart of recent batches')
@@ -26,8 +26,13 @@ export function batchesTab() {
 
   const value = (b: Batch, m: Metric) => m === 'delay' ? (b.postingDelay ?? -1) : m === 'blocks' ? (b.l2Blocks ?? 0) : b.dataBytes
   let list: Batch[] = []
-  function draw() {
-    list = (state.snapshot?.batches ?? []).slice(-48)
+  let sig = ''
+  function draw(force = false) {
+    const next = (state.snapshot?.batches ?? []).slice(-48)
+    const nsig = metric + ':' + next.map((b) => `${b.seq}.${value(b, metric)}`).join(',')
+    if (!force && nsig === sig) { drawFacts(); if (insp.open) drawInspector(); return }
+    const animate = force || !sig || list.at(-1)?.seq !== next.at(-1)?.seq
+    sig = nsig; list = next
     bars.innerHTML = ''; axis.innerHTML = ''
     if (!list.length) return
     const vals = list.map((b) => value(b, metric)).filter((v) => v >= 0)
@@ -46,7 +51,7 @@ export function batchesTab() {
       tooltip(bar, () => `<b>batch #${b.seq}</b><br>${LABEL[metric]}: ${un ? 'resolving…' : metric === 'delay' ? fmtAge(v) : v.toLocaleString('en-US')}<br>landed ${fmtTime(b.l1Time)}<br><span class="dim">click for details</span>`)
       bars.append(bar)
     })
-    gsap.from(bars.children, { scaleY: 0, duration: .5, stagger: .006, ease: 'power3.out', overwrite: true })
+    if (animate) gsap.from(bars.children, { scaleY: 0, duration: .5, stagger: .006, ease: 'power3.out', overwrite: true })
     drawFacts(); if (insp.open) drawInspector()
   }
   function drawFacts() {
@@ -60,14 +65,17 @@ export function batchesTab() {
       { k: 'data availability', v: last?.daMode === 'anytrust' ? 'AnyTrust <em>cert</em>' : last?.daMode ?? '—', s: last ? `header ${last.daHeader} · ${last.dataBytes} bytes` : '' },
     ])
   }
+  let shownSeq = -1
   function drawInspector() {
     const s = state.snapshot; const b = s?.batches.find((x) => x.seq === state.selectedBatch); if (!s || !b) return
+    if (insp.open && shownSeq === b.seq && b.postingDelay !== undefined) return
+    shownSeq = b.seq
     insp.show(`batch #${b.seq}`, (body) => {
       body.append(
         ikv('elysium blocks', b.l2Blocks ? `${b.l2Blocks.toLocaleString('en-US')}` : '—', b.l2FirstBlock ? `${b.l2FirstBlock.toLocaleString('en-US')} → ${b.l2LastBlock!.toLocaleString('en-US')}` : ''),
         ikv('posting delay', b.postingDelay !== undefined ? `${fmtAge(b.postingDelay)} <em>after</em>` : 'resolving…', b.l2LastTime ? `block ${fmtTime(b.l2LastTime)} → landed ${fmtTime(b.l1Time)}` : ''),
         ikv('data', b.daMode === 'anytrust' ? 'AnyTrust <em>cert</em>' : b.daMode, `header ${b.daHeader} · ${b.dataBytes} bytes`),
-        ikv('on hyperevm', `<span class="mono" style="font-family:var(--mono);font-size:24px">block ${b.l1Block.toLocaleString('en-US')}</span>`, ''),
+        ikv('on hyperevm', `<span style="font-family:var(--mono);font-size:24px">block ${b.l1Block.toLocaleString('en-US')}</span>`, 'tx '),
       )
       const links = body.lastElementChild!.querySelector('.s')!
       links.append(link(`${s.network.explorer.hyperevm}/tx/${b.txHash}`, short(b.txHash)), copyBtn(b.txHash))
@@ -76,6 +84,6 @@ export function batchesTab() {
   }
   state.onSnapshot.on(() => { if (el.style.display !== 'none') draw() })
   state.onSelectBatch.on((seq) => { if (seq === null) insp.hide(); else drawInspector() })
-  state.onNet.on(() => { bars.innerHTML = ''; insp.hide() })
-  return { el, onShow: () => { draw(); if (state.selectedBatch) drawInspector() } }
+  state.onNet.on(() => { bars.innerHTML = ''; sig = ''; insp.hide() })
+  return { el, onShow: () => { draw(true); if (state.selectedBatch) drawInspector() } }
 }

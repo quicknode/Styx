@@ -17,11 +17,11 @@ export function bridgeTab() {
   const on: Record<Kind, boolean> = { hype: true, retryable: true, other: true, withdrawals: true }
   let windowMin = 60
   const kindChips: Record<Kind, HTMLButtonElement> = { hype: chip(KS.hype, 'on hl'), retryable: chip(KS.retryable, 'on'), other: chip(KS.other, 'on ely'), withdrawals: chip(KS.withdrawals, 'on ely') }
-  ;(Object.keys(kindChips) as Kind[]).forEach((k) => { const c = kindChips[k]; c.setAttribute('aria-pressed', 'true'); c.addEventListener('click', () => { on[k] = !on[k]; c.classList.toggle('on', on[k]); c.setAttribute('aria-pressed', String(on[k])); draw() }); controls.append(c) })
+  ;(Object.keys(kindChips) as Kind[]).forEach((k) => { const c = kindChips[k]; c.setAttribute('aria-pressed', 'true'); c.addEventListener('click', () => { on[k] = !on[k]; c.classList.toggle('on', on[k]); c.setAttribute('aria-pressed', String(on[k])); draw(true) }); controls.append(c) })
   controls.append(h('span', { class: 'vsep', 'aria-hidden': 'true' }))
   const w60 = chip('60 min', 'on'); const w180 = chip('3 h', ''); w60.setAttribute('aria-pressed', 'true'); w180.setAttribute('aria-pressed', 'false')
-  w60.addEventListener('click', () => { windowMin = 60; w60.classList.add('on'); w180.classList.remove('on'); w60.setAttribute('aria-pressed', 'true'); w180.setAttribute('aria-pressed', 'false'); draw() })
-  w180.addEventListener('click', () => { windowMin = 180; w180.classList.add('on'); w60.classList.remove('on'); w180.setAttribute('aria-pressed', 'true'); w60.setAttribute('aria-pressed', 'false'); draw() })
+  w60.addEventListener('click', () => { windowMin = 60; w60.classList.add('on'); w180.classList.remove('on'); w60.setAttribute('aria-pressed', 'true'); w180.setAttribute('aria-pressed', 'false'); draw(true) })
+  w180.addEventListener('click', () => { windowMin = 180; w180.classList.add('on'); w60.classList.remove('on'); w180.setAttribute('aria-pressed', 'true'); w60.setAttribute('aria-pressed', 'false'); draw(true) })
   controls.append(w60, w180)
 
   const CH = ROW.heroH; const CW = 1776
@@ -32,10 +32,15 @@ export function bridgeTab() {
   const feed = at(h('div', { class: 'feedline', 'aria-live': 'polite' }), 72, ROW.facts + 124, CW); el.append(feed)
   const recent: { kind: Kind; t: number; tx: string }[] = []
 
-  function draw() {
+  let sig = ''
+  function draw(force = false) {
     const s = state.snapshot; if (!s) return
     const hist = s.histogram.slice(-windowMin)
     const kinds = (Object.keys(on) as Kind[]).filter((k) => on[k])
+    const nsig = `${windowMin}:${kinds.join('')}:${hist.map((m) => m.hype + m.retryable + m.other + m.withdrawals).join(',')}`
+    if (!force && nsig === sig) { drawFeed(); return }
+    const animate = force || !sig || sig.split(':')[0] !== String(windowMin) || sig.split(':')[1] !== kinds.join('')
+    sig = nsig
     const max = Math.max(1, ...hist.map((m) => kinds.reduce((a, k) => a + m[k], 0)))
     bars.innerHTML = ''; axis.innerHTML = ''
     axis.append(svg('path', { class: 'hair2', d: `M 0 ${CH - 28} H ${CW}` }))
@@ -53,7 +58,7 @@ export function bridgeTab() {
         bars.append(bar); y += hgt
       }
     })
-    gsap.from(bars.children, { scaleY: 0, duration: .5, stagger: .002, ease: 'power3.out', overwrite: true })
+    if (animate) gsap.from(bars.children, { scaleY: 0, duration: .5, stagger: .002, ease: 'power3.out', overwrite: true })
     const sum = (k: Kind) => hist.reduce((a, m) => a + m[k], 0)
     const win = windowMin === 60 ? 'last hour' : 'last 3 h'
     facts.set([
@@ -64,8 +69,10 @@ export function bridgeTab() {
     ])
     drawFeed()
   }
+  let feedSig = ''
   function drawFeed() {
     const s = state.snapshot; if (!s) return
+    const fs = recent.slice(0, 5).map((r) => r.tx).join(','); if (fs === feedSig) return; feedSig = fs
     feed.innerHTML = ''
     feed.append(h('span', { class: 'feedk' }, 'latest'))
     for (const r of recent.slice(0, 5)) {
@@ -83,6 +90,6 @@ export function bridgeTab() {
   state.onSnapshot.on((s) => { seed(s); if (el.style.display !== 'none') draw() })
   state.onDeposit.on((m: BridgeMsg) => { recent.unshift({ kind: m.kind === 12 ? 'hype' : m.kind === 9 ? 'retryable' : 'other', t: m.l1Time, tx: m.txHash }); if (recent.length > 60) recent.pop(); if (el.style.display !== 'none') drawFeed() })
   state.onWithdrawal.on((w: Withdrawal) => { recent.unshift({ kind: 'withdrawals', t: w.l1Time, tx: w.txHash }); if (el.style.display !== 'none') drawFeed() })
-  state.onNet.on(() => { recent.length = 0; bars.innerHTML = ''; feed.innerHTML = '' })
-  return { el, onShow: draw }
+  state.onNet.on(() => { recent.length = 0; sig = ''; feedSig = ''; bars.innerHTML = ''; feed.innerHTML = '' })
+  return { el, onShow: () => draw(true) }
 }
