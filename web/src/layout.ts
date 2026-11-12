@@ -8,7 +8,7 @@ import { h, at, G } from './dom'
  *   row 3  y=HERO_BOTTOM+40  facts strip: 4 big facts on columns 1,4,7,10
  *   inspector: replaces the facts strip after a selection; Esc or × returns
  */
-export const ROW = { title: 0, hero: 72, heroH: 300, facts: 72 + 300 + 40 }
+export const ROW = { title: 0, hero: 80, heroH: 420, facts: 80 + 420 + 56 }
 export const STAGE_W = G.w(12)
 
 export function titleRow(root: HTMLElement, html: string): { title: HTMLElement; controls: HTMLElement } {
@@ -61,7 +61,7 @@ export class Inspector {
   titleEl: HTMLElement
   open = false
   constructor(root: HTMLElement, private facts: Facts, y = ROW.facts, height = 170) {
-    this.el = at(h('div', { class: 'inspector', role: 'region', 'aria-live': 'polite', tabindex: '-1' }), G.x(1), y, STAGE_W, height)
+    this.el = at(h('div', { class: 'inspector', role: 'region', 'aria-live': 'polite', tabindex: '-1' }), G.x(1), y, STAGE_W, height + 20)
     this.titleEl = h('div', { class: 'ititle' })
     const close = h('button', { class: 'iclose', type: 'button', 'aria-label': 'Close details' }, '× close  esc')
     close.addEventListener('click', () => this.hide())

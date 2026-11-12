@@ -29,7 +29,7 @@ export class HealthStrip {
       root.append(el)
       this.els.set(it.key, { root: el, v, d, state: 'unknown' })
     }
-    gsap.to('.hp', { opacity: 1, y: 0, duration: .8, stagger: .12, ease: 'power3.out', delay: .3, startAt: { y: 10 } })
+    gsap.to([...this.els.values()].map((e) => e.root), { opacity: 1, y: 0, duration: .8, stagger: .12, ease: 'power3.out', delay: .3, startAt: { y: 10 } })
   }
   update(hh: Health) {
     for (const it of ITEMS) {

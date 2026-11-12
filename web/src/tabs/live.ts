@@ -11,7 +11,7 @@ export function liveTab(openTab: (id: string) => void) {
   const el = h('div', { class: 'lanes-clickable' })
   const lanes = new Lanes(el)
   const bridge = new BridgePanel(el)
-  const facts = new Facts(el, 568)
+  const facts = new Facts(el, 680)
   let seeded = false
 
   const wireMarker = (m: HTMLElement) => {

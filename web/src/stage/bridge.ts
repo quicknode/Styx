@@ -8,7 +8,7 @@ export class BridgePanel {
   inEl: HTMLElement; outEl: HTMLElement
   shown = { in: 0, out: 0 }
   field: HTMLElement
-  X = G.x(1); Y = 440; W = G.w(12); H = 96
+  X = G.x(1); Y = 520; W = G.w(12); H = 100
   constructor(stage: HTMLElement) {
     this.root = at(h('div', { class: 'panel' }, [h('span', { class: 'panel-title' }, 'Bridge · last hour')]), this.X, this.Y, this.W, this.H)
     stage.append(this.root)

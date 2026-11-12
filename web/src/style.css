@@ -31,20 +31,20 @@ html, body { height: 100%; background: #0e0e0d; color: var(--ink); font-family: 
 #lockup img { display: block; } #lockup .lk-ely { height: 24px; } #lockup .lk-qn { height: 19px; } #lockup .lk-x { width: 1px; height: 22px; background: var(--rule-strong); }
 
 /* health strip */
-#health { position: absolute; top: 108px; left: 72px; width: 1776px; height: 84px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 48px; }
-.hp { position: relative; border-top: 1px solid var(--ink); padding-top: 10px; opacity: 0; }
+.home-health { position: absolute; display: grid; grid-template-columns: repeat(4, 1fr); gap: 48px; height: 200px; }
+.hp { position: relative; border-top: 1px solid var(--ink); padding-top: 14px; opacity: 0; height: 190px; }
 .hp .k { font-family: var(--mono); font-size: 14px; letter-spacing: .13em; text-transform: uppercase; color: var(--ink-50); display: flex; align-items: center; gap: 10px; }
 .hp .dot { width: 10px; height: 10px; border: 1.25px solid var(--ink); background: var(--paper); display: inline-block; }
 .hp.live .dot { background: var(--ely); border-color: var(--ely-ink); }
 .hp.pending .dot { background: var(--amber-fill); border-color: var(--amber); }
 .hp.failure .dot { background: var(--warn-fill); border-color: var(--warn); }
-.hp .v { font-family: var(--serif); font-size: 34px; letter-spacing: -.01em; margin-top: 6px; color: var(--ink); line-height: 1.05; }
+.hp .v { font-family: var(--serif); font-size: 44px; margin-top: 12px; letter-spacing: -.01em; margin-top: 6px; color: var(--ink); line-height: 1.05; }
 .hp .v em { font-style: italic; font-weight: 300; color: var(--ely-ink); }
 .hp.pending .v em { color: var(--amber); } .hp.failure .v em { color: var(--warn); }
-.hp .d { font-family: var(--mono); font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-50); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hp .d { font-family: var(--mono); font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-50); margin-top: 12px; white-space: normal; line-height: 1.6; }
 
 /* stage */
-#stage { position: absolute; top: 216px; left: 0; width: var(--W); height: 640px; overflow: visible; }
+#stage { position: absolute; top: 128px; left: 0; width: var(--W); height: 880px; overflow: visible; }
 .panel { position: absolute; border: 1.25px solid var(--ink); background: transparent; }
 .panel.ely { border-color: var(--ely-ink); } .panel.hl { border-color: var(--hl-ink); } .panel.qn { border-color: var(--qn-ink); }
 .panel.tint.ely { background: rgba(52,183,221,.12); } .panel.tint.hl { background: rgba(151,252,228,.22); } .panel.inset { background: var(--paper-2); border-color: var(--rule-strong); }
@@ -261,3 +261,17 @@ svg text.ink { fill: var(--ink); } svg text.ely { fill: var(--ely-ink); } svg te
 .contract .ca { font-family: var(--mono); font-size: 16px; letter-spacing: .02em; }
 .foot { position: absolute; margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink-50); }
 #trk-big { font-size: 18px; height: 52px; }
+
+/* ---------- home ---------- */
+.home-title { font-size: 48px; line-height: 56px; }
+.home-sentence { position: absolute; margin: 0; font-size: 24px; line-height: 1.5; color: var(--ink-70); }
+.home-sentence b { font-weight: 400; color: var(--ink); }
+#home-search { position: absolute; height: 52px; box-sizing: border-box; border: 1.25px solid var(--ink); background: var(--paper); font-family: var(--mono); font-size: 18px; color: var(--ink); padding: 0 16px; outline: none; }
+#home-search:focus { border-color: var(--ely-ink); }
+.home-hint { position: absolute; font-family: var(--mono); font-size: 14px; letter-spacing: .04em; color: var(--ink-50); }
+.home-links { position: absolute; display: grid; grid-template-columns: repeat(5, 1fr); gap: 48px; }
+.home-link { text-align: left; border: 0; border-top: 1px solid var(--rule-strong); background: transparent; padding: 14px 0 0; cursor: pointer; transition: border-color .2s; }
+.home-link:hover, .home-link:focus-visible { border-top-color: var(--ink); }
+.home-link .hl-t { display: block; font-family: var(--serif); font-size: 28px; color: var(--ink); }
+.home-link .hl-d { display: block; font-family: var(--mono); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-50); margin-top: 6px; }
+#keys { top: 1036px; }

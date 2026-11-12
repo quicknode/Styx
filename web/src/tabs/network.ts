@@ -11,9 +11,9 @@ const WHAT: Record<string, string> = { rollup: 'assertions', sequencerInbox: 'ba
 export function networkTab() {
   const el = h('div')
   titleRow(el, 'Read from the <em>contracts</em>, nothing self-reported.')
-  const facts = new Facts(el, ROW.hero + 8)
-  const list = at(h('ul', { class: 'contracts', 'aria-label': 'Rollup contracts on HyperEVM' }), G.x(1), ROW.hero + 150, G.w(12)); el.append(list)
-  const foot = at(h('p', { class: 'foot' }), G.x(1), ROW.hero + 150 + 5 * 56 + 32, G.w(12)); el.append(foot)
+  const facts = new Facts(el, ROW.hero + 16)
+  const list = at(h('ul', { class: 'contracts', 'aria-label': 'Rollup contracts on HyperEVM' }), G.x(1), ROW.hero + 180, G.w(12)); el.append(list)
+  const foot = at(h('p', { class: 'foot' }), G.x(1), ROW.hero + 180 + 5 * 56 + 40, G.w(12)); el.append(foot)
   function draw() {
     const s = state.snapshot; if (!s) return
     facts.set([

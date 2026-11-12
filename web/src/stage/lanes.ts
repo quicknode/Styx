@@ -18,7 +18,7 @@ export class Lanes {
   asrtRow: HTMLElement
   // geometry (stage coords)
   X = G.x(1); W = G.w(12)
-  EY = 100; L1Y = 330
+  EY = 120; L1Y = 390
   TRACK_L = G.x(1) + 32; TRACK_R = G.x(1) + G.w(12) - 420
   // moving groups
   elyGroup: HTMLElement; l1Group: HTMLElement
@@ -33,8 +33,8 @@ export class Lanes {
     this.root = h('div', { style: 'position:absolute;inset:0' }); stage.append(this.root)
     this.svg = layer(); this.root.append(this.svg)
 
-    const elyPanel = at(h('div', { class: 'panel tint ely' }, [h('span', { class: 'panel-title ely' }, 'Elysium · L2 blocks · every 100 ms')]), this.X, 28, this.W, 150)
-    const l1Panel = at(h('div', { class: 'panel tint hl' }, [h('span', { class: 'panel-title hl' }, 'HyperEVM · settlement · every second')]), this.X, 258, this.W, 150)
+    const elyPanel = at(h('div', { class: 'panel tint ely' }, [h('span', { class: 'panel-title ely' }, 'Elysium · L2 blocks · every 100 ms')]), this.X, 40, this.W, 160)
+    const l1Panel = at(h('div', { class: 'panel tint hl' }, [h('span', { class: 'panel-title hl' }, 'HyperEVM · settlement · every second')]), this.X, 310, this.W, 160)
     this.root.append(elyPanel, l1Panel)
 
     const laneW = this.TRACK_R - this.TRACK_L
@@ -59,7 +59,7 @@ export class Lanes {
     // connector
     const cx = this.TRACK_R - 80
     const conn = s('path', { class: 'hair2 dash', d: `M ${cx} ${this.EY + 40} V ${this.L1Y - 40}` }); this.svg.append(conn)
-    this.svg.append(txt(cx + 14, (this.EY + this.L1Y) / 2 + 5, 'certificate → calldata', ''))
+    this.svg.append(txt(cx - 14, (this.EY + this.L1Y) / 2 + 5, 'certificate → calldata', '', 'end'))
 
     this.asrtRow = h('div')
     for (const p of [conn]) { prepDraw(p as SVGGeometryElement); gsap.to(p, { strokeDashoffset: 0, duration: 1.2, ease: 'power2.out', delay: .4 }) }

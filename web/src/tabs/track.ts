@@ -17,9 +17,9 @@ export function trackTab() {
   const { controls } = titleRow(el, 'Follow one transaction <em>home</em>.')
   const sample = h('button', { class: 'btn ely', type: 'button' }, 'Try the newest batched tx'); sample.style.position = 'static'; controls.append(sample)
   const input = h('input', { id: 'trk-big', type: 'text', placeholder: 'Paste an Elysium transaction hash', spellcheck: 'false', autocomplete: 'off', 'aria-label': 'Elysium transaction hash' }) as HTMLInputElement
-  at(input, G.x(1), ROW.hero, G.w(12)); el.append(input)
-  const status = at(h('div', { class: 'status', role: 'status', 'aria-live': 'polite' }, 'Paste a hash, or try the newest batched transaction.'), G.x(1), ROW.hero + 64); el.append(status)
-  const ladder = at(h('ol', { class: 'ladder', 'aria-label': 'Settlement progress' }), G.x(1), ROW.hero + 120, G.w(12), 300); el.append(ladder)
+  at(input, G.x(1), ROW.hero + 8, G.w(12)); el.append(input)
+  const status = at(h('div', { class: 'status', role: 'status', 'aria-live': 'polite' }, 'Paste a hash, or try the newest batched transaction.'), G.x(1), ROW.hero + 76); el.append(status)
+  const ladder = at(h('ol', { class: 'ladder', 'aria-label': 'Settlement progress' }), G.x(1), ROW.hero + 140, G.w(12), 320); el.append(ladder)
   const steps = STEPS.map((st, i) => {
     const li = h('li', { class: 'rung2' }, [
       h('div', { class: 'cb', 'aria-hidden': 'true' }, String(i + 1)),
@@ -29,8 +29,8 @@ export function trackTab() {
     ])
     at(li, i * (G.w(12) / 4), 0, G.w(12) / 4 - 32); ladder.append(li); return li
   })
-  const histT = at(h('div', { class: 'lbl' }, 'recent'), G.x(1), ROW.hero + 440); el.append(histT)
-  const hist = at(h('div', { class: 'controls', style: 'justify-content:flex-start;flex-wrap:wrap;height:auto' }), G.x(1), ROW.hero + 464, G.w(12)); el.append(hist)
+  const histT = at(h('div', { class: 'lbl' }, 'recent'), G.x(1), ROW.hero + 500); el.append(histT)
+  const hist = at(h('div', { class: 'controls', style: 'justify-content:flex-start;flex-wrap:wrap;height:auto' }), G.x(1), ROW.hero + 526, G.w(12)); el.append(hist)
   const history: string[] = JSON.parse(localStorage.getItem('esm.hist') ?? '[]')
   let timer = 0; let current = ''
 
