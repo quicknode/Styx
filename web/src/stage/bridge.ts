@@ -30,7 +30,7 @@ export class BridgePanel {
       other: mk('messages in', '', 660, 26),
       withdrawals: mk('withdrawals out', 'ely', 340, 86),
     }
-    this.root.append(at(h('div', { class: 'lbl', style: 'color:var(--ink-50);white-space:normal;line-height:1.5;width:360px' }, 'Deposits arrive as retryable tickets. Withdrawals execute after the challenge window.'), 500, 90))
+    this.root.append(at(h('div', { class: 'lbl', style: 'color:var(--ink-50);white-space:normal;line-height:1.5;width:340px;font-size:11.5px' }, 'Deposits arrive on Elysium as retryable tickets. Withdrawals clear after the challenge window.'), 500, 92))
   }
   setCounts(c: { hype: number; retryable: number; other: number; withdrawals: number }) {
     for (const k of Object.keys(c) as (keyof typeof c)[]) {

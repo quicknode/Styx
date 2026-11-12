@@ -9,6 +9,8 @@ const RUNGS = [
   { key: 'assertion', title: 'Asserted', hint: 'State claim confirmed' },
 ] as const
 
+const fmtAgeShort = (s: number) => (s < 60 ? `${Math.round(s)}s` : s < 3600 ? `${Math.round(s / 60)}m` : `${(s / 3600).toFixed(1)}h`)
+
 /** Paste a hash, watch it climb the settlement ladder. */
 export class Tracker {
   root: HTMLElement
@@ -62,12 +64,12 @@ export class Tracker {
       if (done) rg.cb.textContent = '✓'; else rg.cb.textContent = String(i + 1)
     })
     const now = Math.floor(Date.now() / 1000)
-    if (r.included) this.rungs.included.s.innerHTML = `blk ${r.included.block.toLocaleString('en-US')} · ${fmtAge(now - r.included.timestamp)} ago <a href="${r.included.explorer}" target="_blank" rel="noopener">↗</a>`
-    if (r.batched) this.rungs.batched.s.innerHTML = `#${r.batched.seq} · ${r.batched.postingDelay !== undefined ? `+${fmtAge(r.batched.postingDelay)} after block` : fmtAge(now - r.batched.l1Time) + ' ago'} <a href="${r.batched.explorer}" target="_blank" rel="noopener">↗</a>`
+    if (r.included) this.rungs.included.s.innerHTML = `blk ${r.included.block.toLocaleString('en-US')} · ${fmtAgeShort(now - r.included.timestamp)} <a href="${r.included.explorer}" target="_blank" rel="noopener">↗</a>`
+    if (r.batched) this.rungs.batched.s.innerHTML = `#${r.batched.seq} · ${r.batched.postingDelay !== undefined ? `posted +${fmtAgeShort(r.batched.postingDelay)}` : fmtAgeShort(now - r.batched.l1Time)} <a href="${r.batched.explorer}" target="_blank" rel="noopener">↗</a>`
     else this.rungs.batched.s.textContent = 'Posted to HyperEVM'
     if (r.l1) this.rungs.l1.s.textContent = `${r.l1.confirmations.toLocaleString('en-US')} confirmations`
     else this.rungs.l1.s.textContent = 'HyperEVM confirmations'
-    if (r.assertion) this.rungs.assertion.s.innerHTML = r.assertion.confirmedTime ? `confirmed ${fmtAge(now - r.assertion.confirmedTime)} ago${r.assertion.explorer ? ` <a href="${r.assertion.explorer}" target="_blank" rel="noopener">↗</a>` : ''}` : `created ${r.assertion.createdTime ? fmtAge(now - r.assertion.createdTime) + ' ago' : ''}, pending`
+    if (r.assertion) this.rungs.assertion.s.innerHTML = r.assertion.confirmedTime ? `confirmed ${fmtAgeShort(now - r.assertion.confirmedTime)}${r.assertion.explorer ? ` <a href="${r.assertion.explorer}" target="_blank" rel="noopener">↗</a>` : ''}` : `created ${r.assertion.createdTime ? fmtAgeShort(now - r.assertion.createdTime) : ''}, pending`
     else this.rungs.assertion.s.textContent = 'State claim confirmed'
   }
 }
