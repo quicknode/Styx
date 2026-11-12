@@ -274,8 +274,8 @@ svg text.ink { fill: var(--ink); } svg text.ely { fill: var(--ely-ink); } svg te
 
 /* ---------- home ---------- */
 .home-title { font-size: 48px; line-height: 56px; }
-.home-sentence .n { color: var(--ely-deep); background: var(--ely); padding: 0 6px; animation: numpulse 1.8s ease-in-out infinite; }
-@keyframes numpulse { 0%, 100% { background-color: var(--ely); } 50% { background-color: rgba(52,183,221,.18); } }
+.home-sentence .n { color: var(--ely-deep); background: rgba(52,183,221,.22); padding: 0 5px; border-radius: 0; animation: numpulse 2.6s ease-in-out infinite; }
+@keyframes numpulse { 0%, 100% { background-color: rgba(52,183,221,.22); } 50% { background-color: rgba(52,183,221,.08); } }
 
 .home-search-lbl { position: absolute; font-family: var(--serif); font-size: 40px; letter-spacing: -.02em; line-height: 48px; color: var(--ink); }
 .home-search-lbl em { font-style: italic; font-weight: 300; color: var(--ely-ink); }
