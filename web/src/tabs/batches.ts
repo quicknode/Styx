@@ -13,7 +13,7 @@ import { fmtAge, fmtTime, short, type Batch } from '../api'
 export function batchesTab() {
   const el = h('div')
   titleRow(el, 'Blocks into <em>batches</em>.')
-  const legend = at(h('div', { class: 'legend' }), 72 + 1776 - 640, 10, 640); el.append(legend)
+  const legend = at(h('div', { class: 'legend' }), 72 + 1776 - 980, 14, 980); el.append(legend)
   legend.innerHTML = '<span><i class="lg seg"></i>width = blocks in the batch</span><span><i class="lg stem"></i>stem = posting delay</span><span><i class="lg wait"></i>not yet batched</span>'
   const CH = ROW.heroH, CW = 1776
   const RULER_Y = CH - 92, RULER_H = 44, STEM_BASE = RULER_Y - 12, STEM_MAX = 150
@@ -68,7 +68,7 @@ export function batchesTab() {
       const tail = at(h('div', { class: 'seg wait' }), x0, RULER_Y, Math.max(2, CW - x0), RULER_H)
       tooltip(tail, () => `<b>${waiting.toLocaleString('en-US')} blocks waiting</b><br>not yet in a batch · ${s.elysium.unbatchedSeconds ? fmtAge(s.elysium.unbatchedSeconds) + ' behind head' : ''}`)
       segs.append(tail)
-      axis.append(txt(CW, RULER_Y - 10, `${waiting.toLocaleString('en-US')} waiting`, 'ink', 'end'))
+      axis.append(txt(CW, RULER_Y + RULER_H + 46, `${waiting.toLocaleString('en-US')} blocks waiting →`, 'ink', 'end'))
     }
     if (animate) { gsap.from(segs.querySelectorAll('.seg'), { scaleX: 0, transformOrigin: 'left', duration: .4, stagger: .01, ease: 'power3.out', overwrite: true }); gsap.from(segs.querySelectorAll('.stem, .stemcap'), { opacity: 0, y: 6, duration: .3, delay: .35, stagger: .01, ease: 'power2.out', overwrite: true }) }
     drawFacts(); if (insp.open) drawInspector()
