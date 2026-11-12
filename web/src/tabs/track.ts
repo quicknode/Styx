@@ -205,7 +205,7 @@ export function trackTab() {
     if (!last?.batched || !current) return
     const conf = Math.max(0, number - last.batched.l1Block + 1); last.l1 = { confirmations: conf, head: number }
     const b = stations[2].querySelector('.when b'); const v = conf.toLocaleString('en-US')
-    if (b && b.textContent !== v) { b.textContent = v; gsap.fromTo(b, { opacity: .4 }, { opacity: 1, duration: .5 }) }
+    if (b && b.textContent !== v) { b.textContent = v; gsap.fromTo(b, { opacity: .65 }, { opacity: 1, duration: .4 }) }
   })
 
   function clear(resetInput: boolean) {
