@@ -2,7 +2,7 @@ export type DaMode = 'anytrust' | 'blob' | 'fulldata' | 'unknown'
 export interface Batch { seq: number; l1Block: number; l1Time: number; txHash: string; daMode: DaMode; daHeader: string; dataBytes: number; l2FirstBlock?: number; l2LastBlock?: number; l2LastTime?: number; gasUsed?: number; gasPriceGwei?: number; feeHype?: number; delayedRead?: number; forced?: boolean; poster?: string; l2Blocks?: number; postingDelay?: number }
 export interface Assertion { hash: string; createdBlock?: number; createdTime?: number; confirmedBlock?: number; confirmedTime?: number; createTx?: string; confirmTx?: string }
 export interface BridgeMsg { index: number; kind: number; kindLabel: string; l1Block: number; l1Time: number; txHash: string }
-export interface Withdrawal { l1Block: number; l1Time: number; txHash: string }
+export interface Withdrawal { l1Block: number; l1Time: number; txHash: string; index: number }
 export interface Head { number: number; timestamp: number; receivedAt: number; l1BlockNumber: number }
 export type HealthState = 'live' | 'pending' | 'failure' | 'unknown'
 export interface Health {
@@ -30,12 +30,16 @@ export interface Snapshot {
 export type Net = 'mainnet' | 'testnet'
 export interface TxLadder {
   hash: string
-  status: 'not_found' | 'pending' | 'included' | 'batched' | 'l1_confirmed' | 'assertion_confirmed'
+  status: 'not_found' | 'hyperevm' | 'pending' | 'included' | 'batched' | 'l1_confirmed' | 'claimed' | 'final'
+  tx?: { from: string; to: string | null; valueHype: string; method: string; gasUsed: number; success: boolean; nonce: number }
   included?: { block: number; timestamp: number; success: boolean; explorer: string }
   batched?: { seq: number; l1Block: number; l1Time: number; l1Tx: string; daMode: string; postingDelay?: number; explorer: string }
-  l1?: { confirmations: number }
-  assertion?: { hash: string; createdTime?: number; confirmedTime?: number; confirmTx?: string; explorer?: string }
-  nextEta?: string
+  l1?: { confirmations: number; head: number }
+  claim?: { hash: string; createdTime?: number; confirmedTime?: number; createTx?: string; confirmTx?: string; windowEnd?: number; explorer?: string; confirmExplorer?: string }
+  withdrawal?: { position: number; executedTime?: number; executedTx?: string; explorer?: string }
+  expect: { batchAt?: number; claimAt?: number; windowEndAt?: number; finalAt?: number }
+  cadence: { batchEvery: number; claimEvery: number; period: number; confirmLag: number; l1BlockSec: number }
+  hyperevmExplorer?: string
   error?: string
 }
 

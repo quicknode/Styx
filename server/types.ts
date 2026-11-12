@@ -41,11 +41,7 @@ export interface BridgeMsg {
   txHash: string
 }
 
-export interface Withdrawal {
-  l1Block: number
-  l1Time: number
-  txHash: string
-}
+export interface Withdrawal { l1Block: number; l1Time: number; txHash: string; index: number }
 
 export interface Head {
   number: number

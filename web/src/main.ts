@@ -71,7 +71,8 @@ function start(net: Net) {
     withdrawal: (w) => state.onWithdrawal.emit(w),
   })
   const tab = tabs.current?.id ?? tabs.fromHash()
-  location.hash = `tab=${tab}&net=${net}`
+  const tx = location.hash.match(/tx=(0x[0-9a-fA-F]{64})/)?.[1]
+  location.hash = `tab=${tab}&net=${net}${tx ? `&tx=${tx}` : ''}`
 }
 fetchNetworks().then((r) => { for (const li of Array.from(netmenu.children) as HTMLElement[]) li.setAttribute('aria-disabled', String(!r.networks.includes(li.dataset.net as Net))); if (!r.networks.includes(state.net) && r.networks[0]) state.net = r.networks[0]; start(state.net) }).catch(() => start(state.net))
 /** The dot means "this page is receiving live data". Red only after the stream has been down for 6 s or the sequencer has stalled, so a blip never flashes it. */

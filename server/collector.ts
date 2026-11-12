@@ -282,7 +282,7 @@ export class Collector extends EventEmitter {
       this.bump(l1Time, kind === 12 ? 'hype' : kind === 9 ? 'retryable' : 'other')
       if (!backfill) this.emitEvent({ type: 'deposit', msg })
     } else if (t0 === TOPICS.OutBoxTransactionExecuted) {
-      const w: Withdrawal = { l1Block, l1Time, txHash: log.transactionHash }
+      const w: Withdrawal = { l1Block, l1Time, txHash: log.transactionHash, index: log.data && log.data.length >= 66 ? hexToNum(word(log.data, 0)) : -1 }
       this.withdrawals.push(w); if (this.withdrawals.length > 5000) this.withdrawals.splice(0, this.withdrawals.length - 5000)
       this.bump(l1Time, 'withdrawals')
       if (!backfill) this.emitEvent({ type: 'withdrawal', w })
