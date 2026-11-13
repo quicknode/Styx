@@ -435,7 +435,7 @@ export class Collector extends EventEmitter {
     const sentence = [
       head ? `Elysium is producing a block every ${Math.round(interval)} ms.` : 'Waiting for Elysium blocks.',
       last ? `The last batch landed on HyperEVM ${fmtAge(lastBatchAge)} ago${mode === 'anytrust' ? ' carrying an AnyTrust certificate' : mode === 'fulldata' ? ' with full data, the committee fallback' : ''}${this.unbatchedSeconds() > 300 ? `, and batching is running ${fmtAge(this.unbatchedSeconds())} behind the chain head` : ''}.` : '',
-      openList.length && period ? `${open} state claim${open === 1 ? '' : 's'} inside the ${periodLabel.replace(' window', '')} challenge window.` : openList.length ? `${open} state claim${open === 1 ? '' : 's'} open.` : '',
+      openList.length && period ? (pastWindow ? `${open} state claims open, ${pastWindow} past the ${periodLabel.replace(' window', '')} challenge window${confirmEvery ? `, one confirms every ${fmtAge(confirmEvery)}` : ''}.` : `${open} state claim${open === 1 ? '' : 's'} inside the ${periodLabel.replace(' window', '')} challenge window.`) : openList.length ? `${open} state claim${open === 1 ? '' : 's'} open.` : '',
       hour || whour ? `${hour.toLocaleString('en-US')} deposits in, ${whour} withdrawals out, this hour.` : '',
 
     ].filter(Boolean).join(' ')
