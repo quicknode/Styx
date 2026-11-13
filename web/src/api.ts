@@ -1,6 +1,6 @@
 export type DaMode = 'anytrust' | 'blob' | 'fulldata' | 'unknown'
-export interface Batch { seq: number; l1Block: number; l1Time: number; txHash: string; daMode: DaMode; daHeader: string; dataBytes: number; l2FirstBlock?: number; l2LastBlock?: number; l2LastTime?: number; gasUsed?: number; gasPriceGwei?: number; feeHype?: number; delayedRead?: number; forced?: boolean; poster?: string; l2Blocks?: number; postingDelay?: number }
-export interface Assertion { hash: string; createdBlock?: number; createdTime?: number; confirmedBlock?: number; confirmedTime?: number; createTx?: string; confirmTx?: string }
+export interface Batch { seq: number; l1Block: number; l1Time: number; txHash: string; daMode: DaMode; daHeader: string; dataBytes: number; l2FirstBlock?: number; l2LastBlock?: number; l2LastTime?: number; gasUsed?: number; gasPriceGwei?: number; feeHype?: number; delayedRead?: number; forced?: boolean; poster?: string; l2Blocks?: number; postingDelay?: number; signers?: number }
+export interface Assertion { hash: string; by?: string; confirmedBy?: string; createdBlock?: number; createdTime?: number; confirmedBlock?: number; confirmedTime?: number; createTx?: string; confirmTx?: string }
 export interface BridgeMsg { index: number; kind: number; kindLabel: string; l1Block: number; l1Time: number; txHash: string }
 export interface Withdrawal { l1Block: number; l1Time: number; txHash: string; index: number }
 export interface Head { number: number; timestamp: number; receivedAt: number; l1BlockNumber: number }
@@ -24,6 +24,8 @@ export interface Snapshot {
   histogram: { minute: number; hype: number; retryable: number; other: number; withdrawals: number }[]
   withdrawals24h: number
   costs: { last: { seq: number; gasUsed: number; gasPriceGwei: number; feeHype: number } | null; day: { batches: number; feeHype: number; elysiumBlocks: number; gasUsed: number }; perBlockHype: number; perBatchMedianHype: number }
+  params: { baseStakeHype: number; minAssertionPeriodBlocks: number; validatorsPermissioned: boolean | null; arbosVersion: number; bridgeBalanceHype: number }
+  operators: { sequencer: { address: string; lastAt: number } | null; validator: { address: string; lastAt: number } | null; confirmer: { address: string; lastAt: number } | null; anytrustSigners: number | null }
   inclusion: { submitted: number; read: number; backlog: number; oldestWaitingSec: number; forceWindowSec: number; forcedLast24h: number; submitted24h: number; absorbedLast: number }
   health: Health
 }

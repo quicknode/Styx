@@ -20,9 +20,13 @@ export interface Batch {
   delayedRead?: number    // afterDelayedMessagesRead from the batch call
   forced?: boolean        // posted via forceInclusion, not by the batch poster
   poster?: string
+  /** AnyTrust committee members that signed the certificate (popcount of the signers mask) */
+  signers?: number
 }
 
 export interface Assertion {
+  /** who posted and who confirmed it (tx senders) */
+  by?: string; confirmedBy?: string
   hash: string
   createdBlock?: number
   createdTime?: number
@@ -72,6 +76,8 @@ export interface Snapshot {
   histogram: { minute: number; hype: number; retryable: number; other: number; withdrawals: number }[]
   withdrawals24h: number
   costs: { last: { seq: number; gasUsed: number; gasPriceGwei: number; feeHype: number } | null; day: { batches: number; feeHype: number; elysiumBlocks: number; gasUsed: number }; perBlockHype: number; perBatchMedianHype: number }
+  params: { baseStakeHype: number; minAssertionPeriodBlocks: number; validatorsPermissioned: boolean | null; arbosVersion: number; bridgeBalanceHype: number }
+  operators: { sequencer: { address: string; lastAt: number } | null; validator: { address: string; lastAt: number } | null; confirmer: { address: string; lastAt: number } | null; anytrustSigners: number | null }
   inclusion: { submitted: number; read: number; backlog: number; oldestWaitingSec: number; forceWindowSec: number; forcedLast24h: number; submitted24h: number; absorbedLast: number }
   health: Health
 }

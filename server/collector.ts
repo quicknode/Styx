@@ -23,6 +23,7 @@ export class Collector extends EventEmitter {
   delayed: number[] = [] // unix seconds of delayed-inbox messages read by the sequencer
   delayedIdx: { i: number; t: number }[] = [] // every Bridge message index with its parent-chain time
   incl = { submitted: 0, read: 0, forceWindowSec: 0 }
+  params = { baseStakeHype: 0, minAssertionPeriodBlocks: 0, validatorsPermissioned: null as boolean | null, arbosVersion: 0, bridgeBalanceHype: 0 }
   /** minute bucket (unix minutes) -> counts; exact hourly totals independent of the recent-list buffer */
   hist = new Map<number, { hype: number; retryable: number; other: number; withdrawals: number }>()
   private bump(t: number, k: 'hype' | 'retryable' | 'other' | 'withdrawals') {
@@ -77,6 +78,35 @@ export class Collector extends EventEmitter {
       if (typeof c === 'string' && c.length >= 2 + 64 * 3) this.incl.forceWindowSec = Number(BigInt('0x' + c.slice(2 + 64 * 2, 2 + 64 * 3)))
     } catch (e) { console.warn('[inclusion]', (e as Error).message) }
   }
+  /** Rollup parameters and the bridge balance, read from the contracts; retried until each answers. */
+  async readParams() {
+    try {
+      const [a, b, c, d] = await this.l1.batch([
+        { method: 'eth_call', params: [{ to: this.net.contracts.rollup, data: '0x76e7e23b' }, 'latest'] },
+        { method: 'eth_call', params: [{ to: this.net.contracts.rollup, data: '0x45e38b64' }, 'latest'] },
+        { method: 'eth_call', params: [{ to: this.net.contracts.rollup, data: '0x12ab3d3b' }, 'latest'] },
+        { method: 'eth_getBalance', params: [this.net.contracts.bridge, 'latest'] },
+      ])
+      if (typeof a === 'string' && a.length > 2) this.params.baseStakeHype = Number(BigInt(a)) / 1e18
+      if (typeof b === 'string' && b.length > 2) this.params.minAssertionPeriodBlocks = Number(BigInt(b))
+      if (typeof c === 'string' && c.length > 2) this.params.validatorsPermissioned = BigInt(c) === 0n
+      if (typeof d === 'string' && d.length > 2) this.params.bridgeBalanceHype = Number(BigInt(d)) / 1e18
+    } catch (e) { console.warn('[params]', (e as Error).message) }
+    if (!this.params.arbosVersion) {
+      try { const v = await this.l2.call<string>('eth_call', [{ to: '0x0000000000000000000000000000000000000064', data: '0x051038f2' }, 'latest']); if (v && v.length > 2) this.params.arbosVersion = Number(BigInt(v)) - 55 } catch (e) { console.warn('[params] arbOSVersion', (e as Error).message) }
+    }
+  }
+  operators() {
+    const last = this.lastBatch()
+    const posted = [...this.assertions.values()].filter((a) => a.by && a.createdTime).sort((a, b) => b.createdTime! - a.createdTime!)[0]
+    const conf = [...this.assertions.values()].filter((a) => a.confirmedBy && a.confirmedTime).sort((a, b) => b.confirmedTime! - a.confirmedTime!)[0]
+    return {
+      sequencer: last?.poster ? { address: last.poster, lastAt: last.l1Time } : null,
+      validator: posted ? { address: posted.by!, lastAt: posted.createdTime! } : null,
+      confirmer: conf ? { address: conf.confirmedBy!, lastAt: conf.confirmedTime! } : null,
+      anytrustSigners: last?.signers ?? null,
+    }
+  }
   async readConfirmPeriod() {
     if (this.confirmPeriodBlocks) return
     try { const r = await this.l1.call<string>('eth_call', [{ to: this.net.contracts.rollup, data: '0x2e7acfa6' }, 'latest']); this.confirmPeriodBlocks = Number(BigInt(r)); console.log(`[collector] ${this.net.name}: confirmPeriodBlocks = ${this.confirmPeriodBlocks}`) } catch (e) { console.warn('[collector] confirmPeriodBlocks', (e as Error).message) }
@@ -85,6 +115,7 @@ export class Collector extends EventEmitter {
     await this.readConfirmPeriod()
     if (!this.confirmPeriodBlocks) setInterval(() => void this.readConfirmPeriod(), 30000)
     await this.readInclusion(); setInterval(() => void this.readInclusion(), 10000)
+    await this.readParams(); setInterval(() => void this.readParams(), 30000)
     this.l1Head = await this.l1.blockNumber()
     const from = Math.max(1, this.l1Head - this.backfillBlocks)
     console.log(`[collector] ${this.net.name}: backfilling HyperEVM ${from}..${this.l1Head}`)
@@ -246,7 +277,7 @@ export class Collector extends EventEmitter {
         if (rc && rc.gasUsed) { batch.gasUsed = hexToNum(rc.gasUsed); const gp = Number(BigInt(rc.effectiveGasPrice ?? tx.gasPrice ?? '0x0')); batch.gasPriceGwei = gp / 1e9; batch.feeHype = (batch.gasUsed * gp) / 1e18; batch.poster = rc.from }
         batch.forced = tx.input.startsWith('0xf1981578')
         const d = decodeBatchData(tx.input)
-        batch.daHeader = d.header; batch.dataBytes = d.length; batch.daMode = d.mode
+        batch.daHeader = d.header; batch.dataBytes = d.length; batch.daMode = d.mode; batch.signers = d.signers
         if (dataLocation !== 0 && d.mode === 'unknown') batch.daMode = dataLocation === 3 ? 'blob' : 'unknown'
         // addSequencerL2BatchFromOrigin(seq, data, afterDelayedMessagesRead, gasRefunder, prevMessageCount, newMessageCount):
         // Nitro message counts map 1:1 to Elysium block numbers, so the batch covers blocks [prev, new-1].
@@ -265,12 +296,14 @@ export class Collector extends EventEmitter {
       const hash = log.topics[1]
       const a = this.assertions.get(hash) ?? { hash }
       a.createdBlock = l1Block; a.createdTime = l1Time; a.createTx = log.transactionHash
+      try { const tx = await this.l1.call<any>('eth_getTransactionByHash', [log.transactionHash]); if (tx?.from) a.by = tx.from } catch { /* sender is cosmetic */ }
       this.assertions.set(hash, a); this.trimAssertions()
       if (!backfill) this.emitEvent({ type: 'assertion_created', assertion: a })
     } else if (t0 === TOPICS.AssertionConfirmed) {
       const hash = log.topics[1]
       const a = this.assertions.get(hash) ?? { hash }
       a.confirmedBlock = l1Block; a.confirmedTime = l1Time; a.confirmTx = log.transactionHash
+      try { const tx = await this.l1.call<any>('eth_getTransactionByHash', [log.transactionHash]); if (tx?.from) a.confirmedBy = tx.from } catch { /* sender is cosmetic */ }
       this.assertions.set(hash, a); this.trimAssertions()
       if (!backfill) this.emitEvent({ type: 'assertion_confirmed', assertion: a })
     } else if (t0 === TOPICS.MessageDelivered) {
@@ -457,6 +490,8 @@ export class Collector extends EventEmitter {
     const deposits = this.deposits.slice(-200)
     const lh = this.lastHour()
     return {
+      params: this.params,
+      operators: this.operators(),
       network: { name: this.net.name, elysiumChainId: this.net.elysiumChainId, hyperevmChainId: this.net.hyperevmChainId, explorer: this.net.explorer, contracts: this.net.contracts },
       now,
       elysium: { head, blockInterval: this.blockIntervalMs(), l1Lag, recentHeads: this.heads.slice(-60), unbatchedBlocks: this.unbatched(), unbatchedSeconds: this.unbatchedSeconds() },
@@ -478,7 +513,7 @@ export class Collector extends EventEmitter {
 }
 
 /** Locate the `bytes data` argument in a sequencer batch call and classify its header byte. */
-export function decodeBatchData(input: string): { header: string; length: number; mode: DaMode } {
+export function decodeBatchData(input: string): { header: string; length: number; mode: DaMode; signers?: number } {
   const raw = input.slice(10) // drop selector
   const wordAt = (i: number) => BigInt('0x' + raw.slice(i * 64, i * 64 + 64))
   const nWords = Math.floor(raw.length / 64)
@@ -488,7 +523,13 @@ export function decodeBatchData(input: string): { header: string; length: number
       const len = Number(BigInt('0x' + raw.slice(off * 2, off * 2 + 64)))
       if (len > 0 && off * 2 + 64 + len * 2 <= raw.length + 64) {
         const headerByte = parseInt(raw.slice(off * 2 + 64, off * 2 + 66), 16)
-        return { header: '0x' + headerByte.toString(16).padStart(2, '0'), length: len, mode: classify(headerByte) }
+        let signers: number | undefined
+        if (headerByte === 0x88 && len >= 82) {
+          // cert: 0x88 · dataHash 32 · timeout 8 · version 1 · keysetHash 32 · signersMask 8 · BLS sig 96
+          const maskHex = raw.slice(off * 2 + 64 + 74 * 2, off * 2 + 64 + 82 * 2)
+          let m = BigInt('0x' + maskHex); signers = 0; while (m) { signers += Number(m & 1n); m >>= 1n }
+        }
+        return { header: '0x' + headerByte.toString(16).padStart(2, '0'), length: len, mode: classify(headerByte), signers }
       }
     }
   }
