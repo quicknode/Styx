@@ -56,7 +56,7 @@ export interface Health {
   sequencer: { state: HealthState; headAge: number; blockInterval: number; detail: string }
   batches: { state: HealthState; lastBatchAge: number; medianInterval: number; detail: string }
   data: { state: HealthState; mode: DaMode; detail: string }
-  assertions: { state: HealthState; lastConfirmedAge: number; openCount: number; confirmPeriod: number; detail: string }
+  assertions: { state: HealthState; lastConfirmedAge: number; openCount: number; pastWindow: number; confirmPeriod: number; confirmEvery: number; detail: string }
   sentence: string
 }
 

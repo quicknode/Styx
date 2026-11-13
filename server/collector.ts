@@ -416,12 +416,20 @@ export class Collector extends EventEmitter {
     const period = this.confirmPeriodBlocks
     const grace = Math.max(1800, period * 0.25)
     const oldestOpenAge = openList.length ? now - openList[0].createdTime! : 0
-    const aState: HealthState = !as.length || !period ? 'unknown' : oldestOpenAge <= period + grace ? 'live' : oldestOpenAge <= period + 2 * grace ? 'pending' : 'failure'
+    const pastWindow = period ? openList.filter((a) => now - a.createdTime! > period).length : 0
+    // confirmation runs: the validator confirms in order, on its own cadence (mainnet: one claim every ~12 h)
+    const confGaps: number[] = []; for (let i = 1; i < confirmed.length; i++) confGaps.push(confirmed[i].confirmedTime! - confirmed[i - 1].confirmedTime!)
+    const confirmEvery = confGaps.length ? median(confGaps.filter((g) => g > 600)) : 0
+    // behind: claims are past the window but confirmations still land on cadence. stalled: nothing confirmed in twice the cadence.
+    const stallAfter = confirmEvery ? Math.max(2 * confirmEvery, period * 1.5) : period * 1.5
+    const aState: HealthState = !as.length || !period ? 'unknown' : oldestOpenAge <= period + grace ? 'live' : lastConfirmedAge <= stallAfter ? 'pending' : 'failure'
     const nextDue = openList.length ? Math.max(0, period - oldestOpenAge) : 0
     const periodLabel = !period ? 'window unknown' : period >= 3600 ? `${Math.round(period / 3600)} h window` : `${period} s window`
     const aDetail = aState === 'live'
       ? `${periodLabel} · ${open} open${openList.length ? ` · next due ${nextDue > 60 ? 'in ' + fmtAge(nextDue) : 'now'}` : ''}`
-      : `${periodLabel} · oldest open ${fmtAge(oldestOpenAge)} · ${open} open`
+      : aState === 'pending'
+        ? `${periodLabel} · ${pastWindow} of ${open} open past it · one confirms every ${confirmEvery ? fmtAge(confirmEvery) : '?'}`
+        : `${periodLabel} · ${pastWindow} of ${open} open past it · last confirmation ${lastConf ? fmtAge(lastConfirmedAge) + ' ago' : 'never seen'}`
 
     const lh = this.lastHour(); const hour = lh.hype + lh.retryable + lh.other; const whour = lh.withdrawals
     const sentence = [
@@ -436,7 +444,7 @@ export class Collector extends EventEmitter {
       sequencer: { state: seqState, headAge, blockInterval: interval, detail: head ? `block ${head.number.toLocaleString('en-US')} · ${Math.round(interval)} ms` : 'no heads' },
       batches: { state: batchState, lastBatchAge, medianInterval: med, detail: last ? `#${last.seq} · ${fmtAge(lastBatchAge)} ago${med ? ` · every ${fmtAge(med)}` : ' · measuring cadence'}` : 'none yet' },
       data: { state: dataState, mode, detail: dataDetail },
-      assertions: { state: aState, lastConfirmedAge, openCount: open, confirmPeriod: period, detail: aDetail },
+      assertions: { state: aState, lastConfirmedAge, openCount: open, pastWindow, confirmPeriod: period, confirmEvery, detail: aDetail },
       sentence,
     }
   }

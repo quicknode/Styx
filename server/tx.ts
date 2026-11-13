@@ -15,7 +15,7 @@ export interface TxLadder {
   withdrawal?: { position: number; executedTime?: number; executedTx?: string; explorer?: string }
   /** Expected unix times for stages not reached yet, from cadences measured on chain. */
   expect: { batchAt?: number; claimAt?: number; windowEndAt?: number; finalAt?: number }
-  cadence: { batchEvery: number; claimEvery: number; period: number; confirmLag: number; l1BlockSec: number }
+  cadence: { batchEvery: number; claimEvery: number; period: number; confirmLag: number; l1BlockSec: number; confirmEvery: number; perRun: number; queueAhead: number }
   hyperevmExplorer?: string
   error?: string
 }
@@ -45,11 +45,25 @@ export function cadence(c: Collector) {
   const l1BlockSec = last && c.l1Head - last.l1Block > 100 && c.l1HeadTime > last.l1Time ? (c.l1HeadTime - last.l1Time) / (c.l1Head - last.l1Block) : 1
   const period = Math.round(c.confirmPeriodBlocks * l1BlockSec)
   const lags = claims.filter((a) => a.confirmedTime).map((a) => Math.max(0, a.confirmedTime! - (a.createdTime! + period)))
-  return { batchEvery: median(bg), claimEvery: median(cg), period, confirmLag: median(lags), l1BlockSec }
+  // confirmation runs: events closer than 10 min apart are one run; the validator confirms in order
+  const confirmed = [...c.assertions.values()].filter((a) => a.confirmedTime).sort((a, b) => a.confirmedTime! - b.confirmedTime!)
+  const runs: number[] = []; let n = 0
+  for (let i = 0; i < confirmed.length; i++) { if (i === 0 || confirmed[i].confirmedTime! - confirmed[i - 1].confirmedTime! > 600) { runs.push(confirmed[i].confirmedTime!); n++ } }
+  const rg: number[] = []; for (let i = 1; i < runs.length; i++) rg.push(runs[i] - runs[i - 1])
+  const perRun = n ? Math.max(1, Math.round(confirmed.length / n)) : 1
+  const openSorted = [...c.assertions.values()].filter((a) => a.createdBlock && !a.confirmedTime).sort((a, b) => a.createdBlock! - b.createdBlock!)
+  return { batchEvery: median(bg), claimEvery: median(cg), period, confirmLag: median(lags), l1BlockSec, confirmEvery: median(rg), perRun, queueAhead: openSorted.length, lastRun: runs.at(-1) ?? 0, openSorted }
+}
+/** When a claim at `position` in the open queue (0 = next up) should confirm, on the measured run cadence; never before its window closes. */
+function finalFor(cad: ReturnType<typeof cadence>, position: number, windowEnd: number, now: number): number {
+  if (!cad.confirmEvery) return Math.max(now, windowEnd + cad.confirmLag)
+  let nextRun = cad.lastRun ? cad.lastRun + cad.confirmEvery : now + cad.confirmEvery
+  while (nextRun < now) nextRun += cad.confirmEvery
+  return Math.max(windowEnd, nextRun + Math.floor(position / cad.perRun) * cad.confirmEvery)
 }
 
 export async function lookupTx(c: Collector, hash: string): Promise<TxLadder> {
-  const cad = cadence(c)
+  const full = cadence(c); const { lastRun, openSorted, ...cad } = full
   const out: TxLadder = { hash, status: 'not_found', expect: {}, cadence: cad }
   if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) return { ...out, error: 'That is not a transaction hash.' }
   const [receipt, tx] = await Promise.all([c.l2.call<any>('eth_getTransactionReceipt', [hash]), c.l2.call<any>('eth_getTransactionByHash', [hash])])
@@ -94,13 +108,13 @@ export async function lookupTx(c: Collector, hash: string): Promise<TxLadder> {
         explorer: a.createTx ? `${c.net.explorer.hyperevm}/tx/${a.createTx}` : undefined, confirmExplorer: a.confirmTx ? `${c.net.explorer.hyperevm}/tx/${a.confirmTx}` : undefined,
       }
       out.status = a.confirmedTime ? 'final' : 'claimed'
-      if (!a.confirmedTime && a.createdTime) { out.expect.windowEndAt = a.createdTime + cad.period; out.expect.finalAt = Math.max(now, out.expect.windowEndAt + cad.confirmLag) }
+      if (!a.confirmedTime && a.createdTime) { out.expect.windowEndAt = a.createdTime + cad.period; const pos = Math.max(0, openSorted.findIndex((x) => x.hash === a.hash)); out.cadence.queueAhead = pos; out.expect.finalAt = finalFor(full, pos, out.expect.windowEndAt, now) }
     } else {
       // next claim: continue the measured claim cadence from the last one posted
       const lastClaim = [...c.assertions.values()].filter((x) => x.createdTime).sort((x, y) => y.createdTime! - x.createdTime!)[0]
       let claimAt = lastClaim?.createdTime && cad.claimEvery ? lastClaim.createdTime + cad.claimEvery : now + (cad.claimEvery || 3600)
       while (claimAt < now) claimAt += cad.claimEvery || 3600
-      out.expect.claimAt = claimAt; out.expect.windowEndAt = claimAt + cad.period; out.expect.finalAt = out.expect.windowEndAt + cad.confirmLag
+      out.expect.claimAt = claimAt; out.expect.windowEndAt = claimAt + cad.period; out.expect.finalAt = finalFor(full, openSorted.length, out.expect.windowEndAt, now)
     }
     if (out.withdrawal) {
       const w = c.withdrawals.find((x) => x.index === out.withdrawal!.position)
@@ -114,7 +128,7 @@ export async function lookupTx(c: Collector, hash: string): Promise<TxLadder> {
     const lastClaim = [...c.assertions.values()].filter((x) => x.createdTime).sort((x, y) => y.createdTime! - x.createdTime!)[0]
     let claimAt = lastClaim?.createdTime && cad.claimEvery ? lastClaim.createdTime + cad.claimEvery : batchAt + (cad.claimEvery || 3600)
     while (claimAt < batchAt) claimAt += cad.claimEvery || 3600
-    out.expect.claimAt = claimAt; out.expect.windowEndAt = claimAt + cad.period; out.expect.finalAt = out.expect.windowEndAt + cad.confirmLag
+    out.expect.claimAt = claimAt; out.expect.windowEndAt = claimAt + cad.period; out.expect.finalAt = finalFor(full, openSorted.length, out.expect.windowEndAt, now)
   }
   return out
 }

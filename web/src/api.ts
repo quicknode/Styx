@@ -9,7 +9,7 @@ export interface Health {
   sequencer: { state: HealthState; headAge: number; blockInterval: number; detail: string }
   batches: { state: HealthState; lastBatchAge: number; medianInterval: number; detail: string }
   data: { state: HealthState; mode: DaMode; detail: string }
-  assertions: { state: HealthState; lastConfirmedAge: number; openCount: number; confirmPeriod: number; detail: string }
+  assertions: { state: HealthState; lastConfirmedAge: number; openCount: number; pastWindow: number; confirmPeriod: number; confirmEvery: number; detail: string }
   sentence: string
 }
 export interface Snapshot {
@@ -38,7 +38,7 @@ export interface TxLadder {
   claim?: { hash: string; createdTime?: number; confirmedTime?: number; createTx?: string; confirmTx?: string; windowEnd?: number; explorer?: string; confirmExplorer?: string }
   withdrawal?: { position: number; executedTime?: number; executedTx?: string; explorer?: string }
   expect: { batchAt?: number; claimAt?: number; windowEndAt?: number; finalAt?: number }
-  cadence: { batchEvery: number; claimEvery: number; period: number; confirmLag: number; l1BlockSec: number }
+  cadence: { batchEvery: number; claimEvery: number; period: number; confirmLag: number; l1BlockSec: number; confirmEvery: number; perRun: number; queueAhead: number }
   hyperevmExplorer?: string
   error?: string
 }

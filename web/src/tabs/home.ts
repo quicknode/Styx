@@ -14,18 +14,18 @@ const ITEMS: { key: keyof Omit<Health, 'sentence'>; label: string; word: (hh: He
   { key: 'sequencer', label: 'Sequencer', word: (x) => ({ live: 'producing', pending: 'slowing', failure: 'no blocks', unknown: 'checking' })[x.sequencer.state] },
   { key: 'batches', label: 'Batches', word: (x) => ({ live: 'on time', pending: 'late', failure: 'stalled', unknown: 'measuring' })[x.batches.state] },
   { key: 'data', label: 'Data', word: (x) => x.data.mode === 'anytrust' ? 'AnyTrust' : x.data.mode === 'fulldata' ? 'full data' : x.data.mode === 'blob' ? 'blob' : 'checking' },
-  { key: 'assertions', label: 'Claims', word: (x) => ({ live: 'in window', pending: 'overdue', failure: 'stalled', unknown: 'checking' })[x.assertions.state] },
+  { key: 'assertions', label: 'Claims', word: (x) => ({ live: 'in window', pending: 'behind', failure: 'stalled', unknown: 'checking' })[x.assertions.state] },
 ]
 
 /** Verdict first, then the instrument bar, then the detail, then the action. */
 function verdict(hh: Health): { html: string; cls: string } {
   if (hh.sequencer.state === 'failure') return { html: 'No new Elysium <em>blocks</em>.', cls: 'warn' }
   if (hh.batches.state === 'failure') return { html: 'Batches have <em>stalled</em>.', cls: 'warn' }
-  if (hh.assertions.state === 'failure') return { html: 'A state claim is <em>overdue</em>.', cls: 'warn' }
+  if (hh.assertions.state === 'failure') return { html: 'Claim confirmations have <em>stalled</em>.', cls: 'warn' }
   if (hh.data.mode === 'fulldata') return { html: 'Data is posting <em>in full</em>, the committee fallback.', cls: 'amber' }
   if (hh.batches.state === 'pending') return { html: 'Batches are running <em>late</em>.', cls: 'amber' }
   if (hh.sequencer.state === 'pending') return { html: 'Blocks are <em>slowing</em>.', cls: 'amber' }
-  if (hh.assertions.state === 'pending') return { html: 'A state claim is <em>overdue</em>.', cls: 'amber' }
+  if (hh.assertions.state === 'pending') return { html: 'Claim confirmations are <em>falling behind</em>.', cls: 'amber' }
   const known = [hh.sequencer.state, hh.batches.state, hh.assertions.state].every((s) => s === 'live')
   return known ? { html: 'Elysium is settling <em>normally</em>.', cls: 'ok' } : { html: 'Checking the <em>chain</em>…', cls: '' }
 }
@@ -73,7 +73,7 @@ export function homeTab(openTab: (id: string) => void, lookup: (hash: string) =>
     const parts = [
       `Blocks every ${n(Math.round(s.elysium.blockInterval / 10) * 10 + ' ms')}.`,
       last ? `Last batch landed ${n(fmtAgeShort(now - last.l1Time))} ago${s.elysium.unbatchedSeconds > 300 ? `, batching ${n(fmtAgeShort(s.elysium.unbatchedSeconds))} behind head` : ''}.` : '',
-      hh.assertions.openCount && hh.assertions.confirmPeriod ? `${n(String(hh.assertions.openCount))} state claim${hh.assertions.openCount === 1 ? '' : 's'} inside the ${n(Math.round(hh.assertions.confirmPeriod / 3600) + ' h')} challenge window.` : '',
+      hh.assertions.openCount && hh.assertions.confirmPeriod ? (hh.assertions.pastWindow ? `${n(String(hh.assertions.openCount))} state claims open, ${n(String(hh.assertions.pastWindow))} past the ${n(Math.round(hh.assertions.confirmPeriod / 3600) + ' h')} window${hh.assertions.confirmEvery ? `, one confirms every ${n(fmtAgeShort(hh.assertions.confirmEvery))}` : ''}.` : `${n(String(hh.assertions.openCount))} state claim${hh.assertions.openCount === 1 ? '' : 's'} inside the ${n(Math.round(hh.assertions.confirmPeriod / 3600) + ' h')} challenge window.`) : '',
     ].filter(Boolean).join(' ')
     const shape = parts.replace(/\d[\d,.]*/g, '#')
     sentence.innerHTML = parts

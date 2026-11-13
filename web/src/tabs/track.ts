@@ -29,7 +29,7 @@ export function trackTab() {
   at(input, G.x(1), 68, G.w(9) - 16); input.style.height = '52px'; el.append(input)
   const sample = h('button', { class: 'home-go', type: 'button' }, [h('span', {}, 'Newest batched tx'), h('span', { class: 'arrow', 'aria-hidden': 'true' }, '→')]); at(sample, G.x(10), 68, G.w(3)); sample.style.height = '52px'; sample.style.boxShadow = 'none'; el.append(sample)
   const headline = at(h('h3', { class: 'trk-head', 'aria-live': 'polite', html: 'Paste a hash to see where it is.' }), G.x(1), 150, G.w(11)); el.append(headline)
-  const live = at(h('span', { class: 'trk-live', title: 'Watching this transaction' }), G.x(12) + G.w(1) - 10, 166, 10, 10); el.append(live); live.style.opacity = '0'
+  const live = at(h('span', { class: 'trk-live', title: 'Watching this transaction' }), G.x(12) + G.w(1) - 10, 168, 10, 10); el.append(live); live.style.opacity = '0'
 
   // hero: two tinted regions, a rail, five stations
   const hero = at(h('div', { class: 'trk-hero' }), G.x(1), 220, W, HERO_H); el.append(hero)
@@ -39,8 +39,8 @@ export function trackTab() {
   sv.append(svg('path', { class: 'hair2', d: `M ${SX[0]} ${RAIL_Y} H ${SX[4]}` }))
   const progress = svg('path', { class: 'trk-progress', d: `M ${SX[0]} ${RAIL_Y} H ${SX[0]}` }); sv.append(progress)
   const pending = svg('path', { class: 'trk-pending', d: '' }); sv.append(pending)
-  sv.append(txt(GATE, RAIL_Y - 104, 'batch crosses here', '', 'middle'))
-  const gate = svg('path', { class: 'hair2 dash trk-gate', d: `M ${GATE} ${RAIL_Y - 92} V ${RAIL_Y + 74}` }); sv.append(gate)
+  sv.append(txt(GATE, RAIL_Y - 100, 'batch crosses here', '', 'middle'))
+  const gate = svg('path', { class: 'hair2 dash trk-gate', d: `M ${GATE} ${RAIL_Y - 84} V ${RAIL_Y + 74}` }); sv.append(gate)
   // the challenge window: a fill bar on the rail between Claimed and Final
   const win = at(h('div', { class: 'trk-window' }, [h('i')]), SX[3] + 24, RAIL_Y - 4, SX[4] - SX[3] - 48); hero.append(win)
   const winFill = win.firstElementChild as HTMLElement
@@ -64,7 +64,7 @@ export function trackTab() {
   const legend = at(h('div', { class: 'trk-legend' }, [
     h('span', { class: 'tl' }, [h('i', { class: 'tl-done' }), 'reached']), h('span', { class: 'tl' }, [h('i', { class: 'tl-here' }), 'current']),
     h('span', { class: 'tl' }, [h('i', { class: 'tl-next' }), 'expected']), h('span', { class: 'tl' }, [h('i', { class: 'tl-band' }), 'challenge window']),
-  ]), G.x(9), 690, G.w(4)); el.append(legend); legend.style.opacity = '0'
+  ]), G.x(9), 692, G.w(4)); el.append(legend); legend.style.opacity = '0'
   const note = at(h('p', { class: 'home-next' }, ''), G.x(1), 734, G.w(12)); el.append(note)
 
   const hist: string[] = JSON.parse(localStorage.getItem('esm.hist') ?? '[]')
@@ -197,7 +197,7 @@ export function trackTab() {
     if (r.claim?.confirmExplorer) lnk(r.claim.confirmExplorer, 'confirmation tx')
     if (wd?.explorer) lnk(wd.explorer, 'outbox tx')
     const c = r.cadence; const blocks = state.snapshot?.health.assertions.confirmPeriod || Math.round(c.period / c.l1BlockSec)
-    note.textContent = `Expected times come from what the chain did in the last day: a batch every ${fmtAgeShort(c.batchEvery)}, a claim every ${fmtAgeShort(c.claimEvery)}, a challenge window of ${blocks.toLocaleString('en-US')} HyperEVM blocks (about ${Math.round(c.period / 3600)} h at today's block pace), and confirmations landing ${c.confirmLag ? fmtAgeShort(c.confirmLag) + ' after it closes' : 'as soon as it closes'}.`
+    note.textContent = `Expected times come from what the chain did in the last day: a batch every ${fmtAgeShort(c.batchEvery)}, a claim every ${fmtAgeShort(c.claimEvery)}, a challenge window of ${blocks.toLocaleString('en-US')} HyperEVM blocks (about ${Math.round(c.period / 3600)} h at today's block pace), and ${c.confirmEvery ? `a confirmation run every ${fmtAgeShort(c.confirmEvery)} that confirms ${c.perRun === 1 ? 'one claim' : c.perRun + ' claims'} in order, with ${c.queueAhead} claim${c.queueAhead === 1 ? '' : 's'} ahead of this one` : 'confirmations landing as soon as the window closes'}.`
   }
 
   // confirmations tick with every HyperEVM block, between repolls
