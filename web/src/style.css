@@ -419,6 +419,7 @@ svg text.ink { fill: var(--ink); } svg text.ely { fill: var(--ely-ink); } svg te
 .trk-station.here .name { color: var(--ink); font-size: 30px; }
 .trk-station.here .node { box-shadow: 0 0 0 4px rgba(20,20,20,.08); }
 .trk-gate { stroke: var(--ink); }
+.trk-gatelabel { position: absolute; transform: translateX(-50%); writing-mode: vertical-rl; font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-50); white-space: nowrap; }
 .trk-live { position: absolute; border-radius: 50%; background: var(--ely-ink); animation: trklive 1.6s ease-in-out infinite; }
 @keyframes trklive { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
 .trk-station .node { cursor: help; outline-offset: 4px; }

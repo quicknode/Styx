@@ -39,8 +39,9 @@ export function trackTab() {
   sv.append(svg('path', { class: 'hair2', d: `M ${SX[0]} ${RAIL_Y} H ${SX[4]}` }))
   const progress = svg('path', { class: 'trk-progress', d: `M ${SX[0]} ${RAIL_Y} H ${SX[0]}` }); sv.append(progress)
   const pending = svg('path', { class: 'trk-pending', d: '' }); sv.append(pending)
-  sv.append(txt(GATE, RAIL_Y - 100, 'batch crosses here', '', 'middle'))
-  const gate = svg('path', { class: 'hair2 dash trk-gate', d: `M ${GATE} ${RAIL_Y - 84} V ${RAIL_Y + 74}` }); sv.append(gate)
+  // the gate: a vertical label in the gap between the regions, dashed line below the rail
+  const gateLabel = at(h('div', { class: 'trk-gatelabel' }, 'batch crosses here'), GATE, 10); hero.append(gateLabel)
+  const gate = svg('path', { class: 'hair2 dash trk-gate', d: `M ${GATE} ${RAIL_Y + 10} V ${HERO_H - 16}` }); sv.append(gate)
   // the challenge window: a fill bar on the rail between Claimed and Final
   const win = at(h('div', { class: 'trk-window' }, [h('i')]), SX[3] + 24, RAIL_Y - 4, SX[4] - SX[3] - 48); hero.append(win)
   const winFill = win.firstElementChild as HTMLElement
