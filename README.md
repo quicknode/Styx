@@ -1,6 +1,6 @@
 # Styx
 
-Elysium Settlement Monitor. A live picture of how Elysium, the Arbitrum Orbit L2 on Hyperliquid, settles to HyperEVM. Every number on screen is read from the rollup contracts on HyperEVM or from the Elysium node itself. There is no seeded data and no assumed cadence anywhere in it. If the chain has not told us something yet, the page says so.
+Elysium Settlement Monitor. A live picture of how Elysium, the Arbitrum Orbit L2 on Hyperliquid, settles to HyperEVM. Every number on screen is read from the rollup contracts on HyperEVM or from the Elysium node itself, over Quicknode endpoints for both chains. There is no seeded data and no assumed cadence anywhere in it. If the chain has not told us something yet, the page says so.
 
 Styx is the river you cross to reach Elysium. The app watches the crossing.
 
@@ -49,6 +49,10 @@ The UI (`web/`) is Vite, TypeScript and GSAP, no framework. It renders on a fixe
 | `GET /api/:net/sample-tx` | A transaction from the newest batched block, for the demo button |
 
 ## Where the data comes from
+
+All of it arrives through Quicknode. Each network uses three endpoints: Elysium over HTTP for receipts, blocks and the `arb_*` methods, Elysium over WebSocket for new heads, and HyperEVM over HTTP for logs, `eth_call` reads and the parent chain head. Quicknode runs Elysium mainnet and testnet, so the same `.env` layout covers both. Nothing is cached in a database and nothing comes from an indexer: when the page shows a batch, the collector fetched that batch's transaction and receipt from Quicknode moments ago.
+
+Request volume is modest. Live operation is one WebSocket subscription, one HyperEVM head poll per second, a log fetch per new HyperEVM block, and a handful of `eth_call` reads every 10 to 30 seconds. The start up backfill is the heavy part, a few thousand `eth_getLogs` calls in 1,000 block windows, which is why it takes about a minute.
 
 The collector watches five contracts on HyperEVM. Addresses come from [Kinetiq's contract list](https://elysium.kinetiq.xyz/docs/contract-addresses) and sit in `server/networks.ts`.
 
