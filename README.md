@@ -1,6 +1,6 @@
 # Styx
 
-Elysium Settlement Monitor. A live picture of how Elysium, the Arbitrum Orbit L2 on Hyperliquid, settles to HyperEVM. Every number on screen is read from the rollup contracts on HyperEVM or from the Elysium node itself, over Quicknode endpoints for both chains. There is no seeded data and no assumed cadence anywhere in it. If the chain has not told us something yet, the page says so.
+Elysium Settlement Monitor. A live picture of how Elysium, the Arbitrum Orbit L2 on Hyperliquid, settles to HyperEVM. Every number on screen is read from the rollup contracts on HyperEVM or from the Elysium node itself, over [Quicknode](https://www.quicknode.com/chains/elysium) endpoints for both chains. There is no seeded data and no assumed cadence anywhere in it. If the chain has not told us something yet, the page says so.
 
 Styx is the river you cross to reach Elysium. The app watches the crossing.
 
@@ -17,7 +17,7 @@ Styx is the river you cross to reach Elysium. The app watches the crossing.
 
 ## Running it
 
-You need Node 22 and two Quicknode endpoints per network: one for Elysium (HTTP and WebSocket) and one for HyperEVM (HTTP). The Elysium endpoint must support the Arbitrum `arb_*` methods, which Quicknode's do.
+You need Node 22 and two [Quicknode](https://www.quicknode.com/chains/elysium) endpoints per network: one for Elysium (HTTP and WebSocket) and one for HyperEVM (HTTP). The Elysium endpoint must support the Arbitrum `arb_*` methods, which Quicknode's do. The [Elysium docs on Quicknode](https://www.quicknode.com/docs/elysium) list every method.
 
 ```sh
 cp .env.example .env   # paste your Quicknode endpoints
@@ -50,7 +50,7 @@ The UI (`web/`) is Vite, TypeScript and GSAP, no framework. It renders on a fixe
 
 ## Where the data comes from
 
-All of it arrives through Quicknode. Each network uses three endpoints: Elysium over HTTP for receipts, blocks and the `arb_*` methods, Elysium over WebSocket for new heads, and HyperEVM over HTTP for logs, `eth_call` reads and the parent chain head. Quicknode runs Elysium mainnet and testnet, so the same `.env` layout covers both. Nothing is cached in a database and nothing comes from an indexer: when the page shows a batch, the collector fetched that batch's transaction and receipt from Quicknode moments ago.
+All of it arrives through [Quicknode](https://www.quicknode.com). Each network uses three endpoints: Elysium over HTTP for receipts, blocks and the `arb_*` methods, Elysium over WebSocket for new heads, and HyperEVM over HTTP for logs, `eth_call` reads and the parent chain head. Quicknode runs [Elysium mainnet and testnet](https://www.quicknode.com/chains/elysium), so the same `.env` layout covers both. Nothing is cached in a database and nothing comes from an indexer: when the page shows a batch, the collector fetched that batch's transaction and receipt from Quicknode moments ago.
 
 Request volume is modest. Live operation is one WebSocket subscription, one HyperEVM head poll per second, a log fetch per new HyperEVM block, and a handful of `eth_call` reads every 10 to 30 seconds. The start up backfill is the heavy part, a few thousand `eth_getLogs` calls in 1,000 block windows, which is why it takes about a minute.
 
@@ -181,4 +181,4 @@ docs/screenshots/
 
 ## Credits
 
-Built by Quicknode on Elysium. Not affiliated with or endorsed by Kinetiq or Hyperliquid. Contract addresses from Kinetiq's documentation. Brand assets belong to their owners.
+Built by [Quicknode](https://www.quicknode.com) on Elysium. Not affiliated with or endorsed by Kinetiq or Hyperliquid. Contract addresses from Kinetiq's documentation. Brand assets belong to their owners.
