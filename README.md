@@ -29,6 +29,14 @@ npm run dev            # API on :8787, UI on :5173
 
 The first start backfills a day or two of history from HyperEVM, which takes about a minute. Until then the snapshot is thin and the live dot stays grey.
 
+## Deploying
+
+The collector needs a host that stays on, so the two halves deploy separately.
+
+The collector runs as one container from the `Dockerfile`, API only, behind any reverse proxy that compresses responses. `docker compose up -d --build` with a `.env` next to it is the whole deployment. Only `/api/*` needs to be reachable from the outside. Caddy with `encode zstd gzip` in front of it cuts the snapshot from about 200 KB to 35 KB.
+
+The UI deploys to Vercel from this repository: `vercel.json` builds it from `web/dist`, and `middleware.ts` proxies every `/api` request to the collector. Set `STYX_API_ORIGIN` in the Vercel project to the collector's URL. Browsers only ever talk to Vercel, so the collector's address stays out of the page and out of this repository.
+
 ## How it is built
 
 Two processes, no database.
