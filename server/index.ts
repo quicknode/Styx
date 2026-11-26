@@ -34,7 +34,6 @@ const MIME: Record<string, string> = { '.html': 'text/html', '.js': 'text/javasc
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', 'http://x')
-  res.setHeader('access-control-allow-origin', '*')
   try {
     if (url.pathname === '/api/networks') return json(res, { networks: [...collectors.keys()], ready: Object.fromEntries([...collectors].map(([n, c]) => [n, c.ready])) })
     const m = url.pathname.match(/^\/api\/(mainnet|testnet)\/(snapshot|health|events|sample-tx|tx\/(0x[0-9a-fA-F]{64}))$/)
@@ -58,7 +57,7 @@ const server = http.createServer(async (req, res) => {
     let p = path.join(dist, url.pathname === '/' ? 'index.html' : url.pathname)
     if (!p.startsWith(dist)) { res.writeHead(403); return res.end() }
     if (!fs.existsSync(p) || fs.statSync(p).isDirectory()) p = path.join(dist, 'index.html')
-    if (!fs.existsSync(p)) { res.writeHead(404); return res.end('build the web app first: npm run build') }
+    if (!fs.existsSync(p)) return json(res, { error: 'not found' }, 404)
     res.writeHead(200, { 'content-type': MIME[path.extname(p)] ?? 'application/octet-stream' })
     fs.createReadStream(p).pipe(res)
   } catch (e) { json(res, { error: (e as Error).message }, 500) }
