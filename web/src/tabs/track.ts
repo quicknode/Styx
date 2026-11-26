@@ -91,6 +91,8 @@ export function trackTab() {
     if (!done) timer = window.setTimeout(() => lookup(hash), r.status === 'pending' ? 3000 : 10000)
   }
   function setUrl(hash: string | null) {
+    // the repoll runs while other tabs are open; only the visible Track tab may own the URL
+    if (el.style.display === 'none') return
     const net = location.hash.match(/net=(mainnet|testnet)/)?.[1] ?? state.net
     history.replaceState(null, '', `#tab=track&net=${net}${hash ? `&tx=${hash}` : ''}`)
   }
