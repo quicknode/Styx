@@ -352,6 +352,7 @@ svg text.ink { fill: var(--ink); } svg text.ely { fill: var(--ely-ink); } svg te
 @keyframes building { 50% { opacity: .45; } }
 .chart-guide { position: absolute; top: 0; bottom: 28px; width: 1px; background: var(--ink); opacity: 0; pointer-events: none; transition: opacity .15s; }
 .bar.newest { box-shadow: 0 0 0 1px var(--paper) inset; }
+.bar.zero { left: 0; right: 0; height: 3px; border: 0; background: var(--rule-strong); cursor: default; }
 @keyframes march { to { stroke-dashoffset: -14; } }
 
 /* ---------- batches ruler ---------- */
@@ -588,16 +589,21 @@ body.flow { overflow-x: hidden; }
   .flow #netbtn { height: 36px; padding: 0 12px; font-size: 12px; }
   .flow #toprule { margin-top: 0; }
   /* network tab: a step up so the cards and chips read at desktop-window widths */
-  .flow .chainline, .flow .op-does { font-size: 14px; }
-  .flow .op-role { font-size: 15px; }
-  .flow .op-big { font-size: 30px; line-height: 36px; }
-  .flow .op-small { font-size: 14px; line-height: 22px; }
-  .flow .cc-name { font-size: 21px; }
-  .flow .cc-addr { font-size: 16px; }
-  .flow .foot { font-size: 16px; }
+  .flow .chainline, .flow .op-does { font-size: 15px; }
+  .flow .op-role { font-size: 16px; }
+  .flow .op-who { font-size: 17px; }
+  .flow .opcard { padding: 22px 24px 24px; }
+  .flow .op-big { font-size: 34px; line-height: 40px; }
+  .flow .op-small { font-size: 15px; line-height: 23px; }
+  .flow .cc-name { font-size: 23px; }
+  .flow .cc-role { font-size: 13px; }
+  .flow .cc-addr { font-size: 17px; }
+  .flow .foot { font-size: 17px; }
+  .flow .eyebrow { font-size: 13px; }
+  .flow .home-go.cta { height: 44px; font-size: 13px; }
   .flow .facts { grid-template-columns: repeat(4, 1fr); }
   .flow .ibody { grid-template-columns: repeat(4, 1fr); }
-  .flow #pane-network, .flow #pane-assertions { display: flex; flex-wrap: wrap; align-items: flex-start; column-gap: 16px; }
+  .flow #pane-network, .flow #pane-assertions { display: flex; flex-wrap: wrap; align-items: stretch; column-gap: 16px; }
   .flow #pane-network > [data-at], .flow #pane-assertions > [data-at] { flex: 1 1 100%; }
   .flow #pane-network > .opcard, .flow #pane-assertions > .zone { flex: 1 1 28%; min-width: 0; }
   .flow .zone { min-height: 240px; }

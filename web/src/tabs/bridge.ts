@@ -75,15 +75,17 @@ export function bridgeTab() {
     const bw = CW / hist.length
     const nextH = new Map<string, number>()
     hist.forEach((m, i) => {
-      // one column per bucket: segments stack inside it, and the column itself scales up from the baseline
-      const col = at(h('div', { class: 'col' + (i === hist.length - 1 ? ' building' : '') }), i * bw + 1, 0, Math.max(1, bw - 2), CH - 28)
+      // one column per bucket: segments stack inside it, and the column itself scales up from the baseline.
+      // In flow the column edges snap to whole pixels so every gap is the same width.
+      const x0 = view.flow ? Math.round(i * bw) : i * bw; const x1 = view.flow ? Math.round((i + 1) * bw) : (i + 1) * bw
+      const col = at(h('div', { class: 'col' + (i === hist.length - 1 ? ' building' : '') }), x0 + 1, 0, Math.max(1, x1 - x0 - 2), CH - 28)
       col.style.top = ''; col.style.bottom = '28px'
       let y = 0; let total = 0; let changed = false
       for (const k of kinds) {
         const v = m[k]; if (!v) continue
         const hgt = (v / max) * (CH - 60)
         const key = `${m.minute}:${k}`; nextH.set(key, hgt)
-        const bar = at(h('div', { class: 'bar ' + KC[k] + (i === hist.length - 1 ? ' newest' : '') }), 0, 0, Math.max(1, bw - 2), hgt)
+        const bar = at(h('div', { class: 'bar ' + KC[k] + (i === hist.length - 1 ? ' newest' : '') }), 0, 0, Math.max(1, x1 - x0 - 2), hgt)
         bar.style.top = ''; bar.style.bottom = y + 'px'; bar.style.left = '0'
         tooltip(bar, () => `<b>${fmtTime(m.minute * 60)}${B > 1 ? ' +15 min' : ''}</b><br>${kinds.map((kk) => `${KL[kk]}: ${m[kk]}`).join('<br>')}`)
         col.append(bar); y += hgt; total += hgt
@@ -91,7 +93,8 @@ export function bridgeTab() {
         if (!animate && from !== undefined && Math.abs(from - hgt) > .5) { changed = true; gsap.fromTo(bar, { height: from }, { height: hgt, duration: .25, ease: 'power3.out', overwrite: true }) }
         if (!animate && from === undefined) changed = true
       }
-      if (!total) return
+      // a minute with nothing crossing still gets a stub on the baseline, so a gap reads as zero, not as missing
+      if (!total) { col.classList.remove('building'); col.append(h('div', { class: 'bar zero' })); bars.append(col); return }
       bars.append(col)
       const isNew = !animate && ![...prevH.keys()].some((k) => k.startsWith(`${m.minute}:`))
       if (animate || isNew) gsap.fromTo(col, { scaleY: 0 }, { scaleY: 1, duration: animate ? .35 : .25, delay: animate ? i * .003 : 0, ease: 'power3.out', overwrite: true })
