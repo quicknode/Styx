@@ -575,3 +575,23 @@ body.flow { overflow-x: hidden; }
 
 /* no hover, no tooltips: a tap would pin them */
 @media (hover: none) { .tip { display: none !important; } }
+
+/* landscape phones and tablets (flow, 640 px and up): one-row header, four facts across, cards and zones side by side */
+@media (min-width: 640px) {
+  .flow #tabs { order: 0; width: auto; flex: 1 1 auto; margin: 0 16px; }
+  .flow .tabdrop { width: 100%; max-width: 260px; }
+  .flow .tabmenu { max-width: 260px; }
+  .flow #netswitch { margin-left: 0; }
+  .flow #toprule { margin-top: 2px; }
+  .flow .facts { grid-template-columns: repeat(4, 1fr); }
+  .flow .ibody { grid-template-columns: repeat(4, 1fr); }
+  .flow #pane-network, .flow #pane-assertions { display: flex; flex-wrap: wrap; align-items: flex-start; column-gap: 16px; }
+  .flow #pane-network > [data-at], .flow #pane-assertions > [data-at] { flex: 1 1 100%; }
+  .flow #pane-network > .opcard, .flow #pane-assertions > .zone { flex: 1 1 28%; min-width: 0; }
+  .flow .zone { min-height: 240px; }
+  .flow .cchip { flex: 1 1 18%; }
+}
+@media (max-height: 500px) {
+  .flow .tabpane { padding-top: 14px; }
+  .flow .tabpane > [data-at] { margin-bottom: 14px; }
+}

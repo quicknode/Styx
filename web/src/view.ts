@@ -27,9 +27,9 @@ export function applyMode() {
   for (const el of els) {
     if (view.flow) { el.style.left = ''; el.style.top = ''; el.style.width = ''; el.style.height = '' }
     else {
-      el.style.left = el.dataset.x + 'px'; el.style.top = el.dataset.y + 'px'
-      el.style.width = el.dataset.w !== undefined ? el.dataset.w + 'px' : ''
-      el.style.height = el.dataset.h !== undefined ? el.dataset.h + 'px' : ''
+      el.style.left = el.dataset.gx + 'px'; el.style.top = el.dataset.gy + 'px'
+      el.style.width = el.dataset.gw !== undefined ? el.dataset.gw + 'px' : ''
+      el.style.height = el.dataset.gh !== undefined ? el.dataset.gh + 'px' : ''
     }
   }
 }

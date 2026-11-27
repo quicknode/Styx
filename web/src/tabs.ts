@@ -50,7 +50,7 @@ export class Tabs {
     const btn = this.bar.querySelector(`.tab[data-id="${t.id}"]`) as HTMLElement
     gsap.to(this.ink, { left: btn.offsetLeft, width: btn.offsetWidth, duration: .45, ease: 'power3.out' })
     if (prev) { prev.onHide?.(); gsap.to(prev.el, { opacity: 0, y: -8, duration: .2, onComplete: () => { prev.el.style.display = 'none' } }) }
-    t.el.style.display = 'block'
+    t.el.style.display = ''
     gsap.fromTo(t.el, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: .45, delay: prev ? .15 : 0, ease: 'power3.out' })
     t.onShow?.()
   }

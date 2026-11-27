@@ -194,6 +194,8 @@ export function trackTab() {
     } else { gsap.to([win, winLabel], { opacity: 0, duration: .3 }) }
 
     // the rail: solid to the reached station, marching dashes to the next one (the window bar covers Claimed to Final)
+    const first = reachedShown < 0
+    let dur = 0
     const C = g.c
     const tx = C[reached - 1]
     pending.setAttribute('d', reached < 4 ? `M ${pt(tx)} L ${pt(C[reached])}` : '')
@@ -201,7 +203,7 @@ export function trackTab() {
     if (reached !== reachedShown) {
       const from = reachedShown < 0 ? C[0] : C[Math.max(0, reachedShown - 1)]
       const crossing = from < g.gate && tx > g.gate
-      const dur = reachedShown < 0 ? Math.min(1.4, .4 + reached * .25) : .7
+      dur = reachedShown < 0 ? Math.min(1.4, .4 + reached * .25) : .7
       progress.setAttribute('d', `M ${pt(C[0])} L ${pt(from)}`)
       const o = { x: from }
       gsap.set(packet, { opacity: 1, scale: 1 })
@@ -238,6 +240,8 @@ export function trackTab() {
     if (r.claim?.explorer) lnk(r.claim.explorer, 'claim tx')
     if (r.claim?.confirmExplorer) lnk(r.claim.confirmExplorer, 'confirmation tx')
     if (wd?.explorer) lnk(wd.explorer, 'outbox tx')
+    // on the first render the card, links and note arrive after the packet, one after another
+    if (first) gsap.fromTo([facts.el, links, note], { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .5, stagger: .1, delay: dur + .1, ease: 'power2.out', overwrite: true })
     const c = r.cadence; const blocks = state.snapshot?.health.assertions.confirmPeriod || Math.round(c.period / c.l1BlockSec)
     note.textContent = `Expected times come from what the chain did in the last day: a batch every ${fmtAgeShort(c.batchEvery)}, a claim every ${fmtAgeShort(c.claimEvery)}, a challenge window of ${blocks.toLocaleString('en-US')} HyperEVM blocks (about ${Math.round(c.period / 3600)} h at today's block pace), and ${c.confirmEvery ? `a confirmation run every ${fmtAgeShort(c.confirmEvery)} that confirms ${c.perRun === 1 ? 'one claim' : c.perRun + ' claims'} in order, with ${c.queueAhead} claim${c.queueAhead === 1 ? '' : 's'} ahead of this one` : 'confirmations landing as soon as the window closes'}.`
   }
