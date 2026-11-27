@@ -352,7 +352,8 @@ svg text.ink { fill: var(--ink); } svg text.ely { fill: var(--ely-ink); } svg te
 @keyframes building { 50% { opacity: .45; } }
 .chart-guide { position: absolute; top: 0; bottom: 28px; width: 1px; background: var(--ink); opacity: 0; pointer-events: none; transition: opacity .15s; }
 .bar.newest { box-shadow: 0 0 0 1px var(--paper) inset; }
-.bar.zero { left: 0; right: 0; height: 3px; border: 0; background: var(--rule-strong); cursor: default; }
+.bar.zero { left: 0; right: 0; height: 6px; border: 0; background: var(--rule-strong); cursor: default; }
+.bar.zero:hover { background: var(--ink); filter: none; }
 @keyframes march { to { stroke-dashoffset: -14; } }
 
 /* ---------- batches ruler ---------- */

@@ -94,7 +94,12 @@ export function bridgeTab() {
         if (!animate && from === undefined) changed = true
       }
       // a minute with nothing crossing still gets a stub on the baseline, so a gap reads as zero, not as missing
-      if (!total) { col.classList.remove('building'); col.append(h('div', { class: 'bar zero' })); bars.append(col); return }
+      if (!total) {
+        col.classList.remove('building')
+        const stub = h('div', { class: 'bar zero' })
+        tooltip(stub, () => `<b>${fmtTime(m.minute * 60)}${B > 1 ? ' +15 min' : ''}</b><br>${kinds.map((kk) => `${KL[kk]}: 0`).join('<br>')}`)
+        col.append(stub); bars.append(col); return
+      }
       bars.append(col)
       const isNew = !animate && ![...prevH.keys()].some((k) => k.startsWith(`${m.minute}:`))
       if (animate || isNew) gsap.fromTo(col, { scaleY: 0 }, { scaleY: 1, duration: animate ? .35 : .25, delay: animate ? i * .003 : 0, ease: 'power3.out', overwrite: true })
