@@ -11,8 +11,23 @@ import { bridgeTab } from './tabs/bridge'
 import { trackTab } from './tabs/track'
 import { networkTab } from './tabs/network'
 
-const deck = document.getElementById('deck')!
-function fit() { const sc = Math.min(innerWidth / 1920, innerHeight / 1080); deck.style.transform = `translate(-50%,-50%) scale(${sc})` }
+import { view, scale, applyMode, FLOW_BELOW } from './view'
+
+/**
+ * Wide: three bands scaled by sc = min(vw/1920, vh/1080), centred on paper that fills the viewport.
+ * Flow: scale 1, every tab reflows into one scrolling column. Heroes redraw on change.
+ */
+let fitTimer = 0
+function fit() {
+  const flow = innerWidth < FLOW_BELOW
+  const sc = flow ? 1 : Math.min(innerWidth / 1920, innerHeight / 1080)
+  document.documentElement.style.setProperty('--sc', String(sc))
+  document.body.classList.toggle('flow', flow)
+  const flipped = flow !== view.flow
+  view.flow = flow; view.sc = sc
+  if (flipped) applyMode()
+  if (flipped || flow) { clearTimeout(fitTimer); fitTimer = window.setTimeout(() => view.onChange.emit(), flipped ? 0 : 120) }
+}
 addEventListener('resize', fit); fit()
 
 const stage = document.getElementById('stage')!
@@ -29,6 +44,7 @@ tabs.add({ id: 'assertions', label: 'Assertions', key: '4', el: asserts.el, onSh
 tabs.add({ id: 'bridge', label: 'Bridge', key: '5', el: bridge.el, onShow: bridge.onShow })
 tabs.add({ id: 'track', label: 'Track', key: '6', el: track.el, onShow: track.onShow })
 tabs.add({ id: 'network', label: 'Network', key: '7', el: network.el, onShow: network.onShow })
+applyMode(); if (view.flow) view.onChange.emit()
 
 gsap.from('#toprule', { scaleX: 0, duration: 1.2, ease: 'power3.out' })
 gsap.from('#top', { opacity: 0, y: 8, duration: .9, ease: 'power3.out' })
@@ -82,7 +98,8 @@ setInterval(paintDot, 1000)
 state.onSnapshot.on((s) => { seqDown = s.health.sequencer.state === 'failure'; paintDot() })
 
 /** A soft paper flash on settlement events, the way a stamp lands. */
-function flash() { const f = document.createElement('div'); f.style.cssText = 'position:absolute;inset:0;background:var(--ely);opacity:0;pointer-events:none;z-index:9'; deck.append(f); gsap.to(f, { opacity: .08, duration: .12, yoyo: true, repeat: 1, onComplete: () => f.remove() }) }
+function flash() { const f = document.createElement('div'); f.style.cssText = 'position:fixed;inset:0;background:var(--ely);opacity:0;pointer-events:none;z-index:9'; document.body.append(f); gsap.to(f, { opacity: .08, duration: .12, yoyo: true, repeat: 1, onComplete: () => f.remove() }) }
+void scale
 
 // ---- keyboard ----
 addEventListener('keydown', (e) => {

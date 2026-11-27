@@ -4,6 +4,7 @@ import { state, selectBatch } from '../state'
 import { copyBtn, link, tooltip } from '../ui'
 import { titleRow, hero, Facts, Inspector, ikv, ROW } from '../layout'
 import { fmtAge, fmtTime, short, type Batch } from '../api'
+import { view, flowWidth } from '../view'
 
 /** A shelf of blocks: every batch is a segment as wide as the blocks it carried, laid end to end; the forming batch is the hatched tail. */
 export function batchesTab() {
@@ -11,10 +12,10 @@ export function batchesTab() {
   titleRow(el, 'Blocks into <em>batches</em>.')
   const legend = at(h('div', { class: 'legend' }), 72, 60, 1100); legend.style.justifyContent = 'flex-start'; el.append(legend)
   legend.innerHTML = '<span><i class="lg lg-seg"></i>one batch · width = blocks it carried</span><span><i class="lg lg-wait"></i>forming now</span>'
-  const CH = ROW.heroH, CW = 1776
-  const BASE = CH - 28, SEG_H = 200          // same baseline as the Bridge chart
-  const chart = hero(el, CH); chart.setAttribute('role', 'img'); chart.setAttribute('aria-label', 'Elysium blocks laid end to end and divided into batches')
-  const axis = layer(CW, CH); chart.append(axis)
+  // the chart draws into whatever size it is given: 1776×420 on the grid, the column width × 320 in flow
+  const chart = hero(el, ROW.heroH); chart.setAttribute('role', 'img'); chart.setAttribute('aria-label', 'Elysium blocks laid end to end and divided into batches'); chart.style.setProperty('--fh', '320px')
+  const axis = layer(1776, ROW.heroH); chart.append(axis)
+  const size = () => { const CW = view.flow ? flowWidth() : 1776; const CH = view.flow ? 320 : ROW.heroH; return { CW, CH, BASE: CH - 28, SEG_H: Math.round(CH * 200 / 420) } }
   const items = h('div', { style: 'position:absolute;inset:0', role: 'list' }); chart.append(items)
   const facts = new Facts(el)
   const insp = new Inspector(el, facts)
@@ -25,25 +26,30 @@ export function batchesTab() {
   let sig = ''; let shownSeq = -1
   function draw(force = false) {
     const s = state.snapshot; if (!s) return
-    const list = s.batches.filter((b) => b.l2FirstBlock !== undefined && b.l2LastBlock !== undefined).slice(-36)
+    const { CW, CH, BASE, SEG_H } = size()
+    const list = s.batches.filter((b) => b.l2FirstBlock !== undefined && b.l2LastBlock !== undefined).slice(-(CW >= 1000 ? 36 : 18))
     const head = s.elysium.head?.number ?? 0
     const waiting = Math.max(0, head - (list.at(-1)?.l2LastBlock ?? head))
-    const nsig = list.map((b) => b.seq).join(',') + ':' + Math.floor(waiting / 200)
+    const nsig = list.map((b) => b.seq).join(',') + ':' + Math.floor(waiting / 200) + ':' + CW
     if (!force && nsig === sig) { drawFacts(); if (insp.open) drawInspector(); return }
     const animate = force || !sig || !sig.startsWith(list.map((b) => b.seq).join(','))
     sig = nsig
-    items.innerHTML = ''; axis.innerHTML = ''
+    items.innerHTML = ''; axis.innerHTML = ''; axis.setAttribute('viewBox', `0 0 ${CW} ${CH}`)
     if (!list.length) return
     const first = list[0].l2FirstBlock!; const span = Math.max(1, head - first)
     const x = (blk: number) => ((blk - first) / span) * CW
     axis.append(svg('path', { class: 'hair2', d: `M 0 ${BASE} H ${CW}` }))
-    const raw = Math.pow(10, Math.floor(Math.log10(span / 8))); const tick = raw * (span / raw > 40 ? 5 : span / raw > 16 ? 2 : 1)
+    // ticks: the grid keeps its rule; a narrow chart picks the first step of 1, 2, 5, 10 that leaves room for the labels
+    const n = Math.max(3, Math.round(CW / 220))
+    const raw = Math.pow(10, Math.floor(Math.log10(span / n)))
+    let tick = raw * (span / raw > 40 ? 5 : span / raw > 16 ? 2 : 1)
+    if (CW < 1000) { tick = raw * 10; for (const m of [1, 2, 5, 10]) if (span / (raw * m) <= n * 1.5) { tick = raw * m; break } }
     for (let n = Math.ceil(first / tick) * tick; n <= head; n += tick) { const xx = x(n); axis.append(svg('path', { class: 'hair2', d: `M ${xx} ${BASE} V ${BASE + 8}` })); axis.append(txt(xx, BASE + 22, n.toLocaleString('en-US'), '', 'middle')) }
     axis.append(txt(0, 16, `${list.length} most recent batches · ${span.toLocaleString('en-US')} elysium blocks →`, ''))
     list.forEach((b, i) => {
       const x0 = x(b.l2FirstBlock!), x1 = x(b.l2LastBlock! + 1); const w = Math.max(2, x1 - x0 - 2)
       const seg = at(h('div', { class: 'seg' + (i % 2 ? ' alt' : '') + (b.daMode === 'fulldata' ? ' full' : '') + (b.seq === state.selectedBatch ? ' sel' : ''), role: 'listitem', tabindex: '0', 'aria-label': `Batch ${b.seq}, ${b.l2Blocks} blocks` }), x0, BASE - SEG_H, w, SEG_H)
-      seg.append(h('span', { class: 'segl vert' }, `#${b.seq}`))
+      if (w > 18) seg.append(h('span', { class: 'segl vert' }, `#${b.seq}`))
       if (w > 30) seg.append(h('span', { class: 'segn vert' }, b.l2Blocks!.toLocaleString('en-US')))
       const open = () => selectBatch(b.seq)
       seg.addEventListener('click', open)
@@ -55,7 +61,7 @@ export function batchesTab() {
       const tail = at(h('div', { class: 'seg wait', 'aria-label': `${waiting} blocks waiting for the next batch` }), x0, BASE - SEG_H, Math.max(2, CW - x0), SEG_H)
       tooltip(tail, () => `<b>forming now</b><br>${waiting.toLocaleString('en-US')} blocks waiting for batch #${list.at(-1)!.seq + 1}<br>${s.elysium.unbatchedSeconds ? `${fmtAge(s.elysium.unbatchedSeconds)} behind head` : ''}`)
       items.append(tail)
-      axis.append(txt(CW, 16, `${waiting.toLocaleString('en-US')} blocks waiting →`, 'ink', 'end'))
+      axis.append(txt(CW, CW < 1000 ? 36 : 16, `${waiting.toLocaleString('en-US')} blocks waiting →`, 'ink', 'end'))
     }
     if (animate) gsap.fromTo(Array.from(items.children), { scaleX: 0, transformOrigin: 'left center' }, { scaleX: 1, duration: .35, stagger: .012, ease: 'power3.out' })
     drawFacts(); if (insp.open) drawInspector()
@@ -89,6 +95,7 @@ export function batchesTab() {
     for (const n of Array.from(items.children)) n.classList.toggle('sel', (n as HTMLElement).getAttribute('aria-label')?.startsWith(`Batch ${b.seq},`) ?? false)
   }
   state.onSnapshot.on(() => { if (el.style.display !== 'none') draw() })
+  view.onChange.on(() => { if (el.style.display !== 'none') draw(true) })
   state.onSelectBatch.on((seq) => { if (el.style.display === 'none') return; if (seq === null) { insp.hide(); for (const n of Array.from(items.children)) n.classList.remove('sel') } else drawInspector() })
   state.onNet.on(() => { items.innerHTML = ''; sig = ''; insp.hide() })
   return { el, onShow: () => { draw(true); if (state.selectedBatch) drawInspector() } }

@@ -4,6 +4,7 @@ import { state } from '../state'
 import { titleRow, Facts } from '../layout'
 import { tooltip } from '../ui'
 import { fetchSampleTx, fetchTx, fmtAge, fmtAgeShort, fmtClock, fmtTime, short, type TxLadder } from '../api'
+import { view, flowWidth } from '../view'
 
 /**
  * Track: a journey from Elysium to HyperEVM in five stations.
@@ -19,6 +20,15 @@ const STAGES = [
 ] as const
 const W = 1776, RAIL_Y = 170, HERO_H = 300, GATE = 724
 const SX = [175, 525, 919, 1262, 1605] // station x positions on the rail
+/**
+ * The rail is horizontal on the grid and vertical in flow. `c` is the coordinate along the rail
+ * (x when horizontal, y when vertical); every station, the gate and the window are expressed in it.
+ */
+interface Geom { vert: boolean; w: number; h: number; x0: number; y0: number; c: number[]; gate: number }
+function geom(): Geom {
+  if (!view.flow) return { vert: false, w: W, h: HERO_H, x0: SX[0], y0: RAIL_Y, c: SX, gate: GATE }
+  return { vert: true, w: flowWidth(), h: 690, x0: 40, y0: 70, c: [70, 190, 360, 480, 600], gate: 285 }
+}
 
 const inAbout = (ts: number, now: number) => { const d = ts - now; return d < 90 ? 'in about a minute' : d < 3600 ? `in about ${Math.round(d / 60)} min` : d < 7200 ? 'in about an hour' : fmtClock(ts) }
 
@@ -26,38 +36,68 @@ export function trackTab() {
   const el = h('div')
   const { controls } = titleRow(el, 'Follow one transaction <em>home</em>.'); void controls
   const input = h('input', { id: 'trk-big', type: 'search', placeholder: 'Paste an Elysium transaction hash', spellcheck: 'false', autocomplete: 'off', 'aria-label': 'Elysium transaction hash' }) as HTMLInputElement
-  at(input, G.x(1), 68, G.w(9) - 16); input.style.height = '52px'; el.append(input)
-  const sample = h('button', { class: 'home-go', type: 'button' }, [h('span', {}, 'Newest batched tx'), h('span', { class: 'arrow', 'aria-hidden': 'true' }, '→')]); at(sample, G.x(10), 68, G.w(3)); sample.style.height = '52px'; sample.style.boxShadow = 'none'; el.append(sample)
+  at(input, G.x(1), 68, G.w(9) - 16, 52); el.append(input)
+  const sample = h('button', { class: 'home-go', type: 'button' }, [h('span', {}, 'Newest batched tx'), h('span', { class: 'arrow', 'aria-hidden': 'true' }, '→')]); at(sample, G.x(10), 68, G.w(3), 52); sample.style.boxShadow = 'none'; el.append(sample)
   const headline = at(h('h3', { class: 'trk-head', 'aria-live': 'polite', html: 'Paste a hash to see where it is.' }), G.x(1), 150, G.w(11)); el.append(headline)
   const live = at(h('span', { class: 'trk-live', title: 'Watching this transaction' }), G.x(12) + G.w(1) - 10, 168, 10, 10); el.append(live); live.style.opacity = '0'
 
   // hero: two tinted regions, a rail, five stations
   const hero = at(h('div', { class: 'trk-hero' }), G.x(1), 220, W, HERO_H); el.append(hero)
-  hero.append(at(h('div', { class: 'trk-region ely' }, [h('span', { class: 'panel-title ely' }, 'Elysium')]), 0, 0, GATE - 24, HERO_H))
-  hero.append(at(h('div', { class: 'trk-region hl' }, [h('span', { class: 'panel-title hl' }, 'HyperEVM')]), GATE + 24, 0, W - GATE - 24, HERO_H))
+  hero.append(h('div', { class: 'trk-region ely' }, [h('span', { class: 'panel-title ely' }, 'Elysium')]))
+  hero.append(h('div', { class: 'trk-region hl' }, [h('span', { class: 'panel-title hl' }, 'HyperEVM')]))
   const sv = layer(W, HERO_H); hero.append(sv)
-  sv.append(svg('path', { class: 'hair2', d: `M ${SX[0]} ${RAIL_Y} H ${SX[4]}` }))
-  const progress = svg('path', { class: 'trk-progress', d: `M ${SX[0]} ${RAIL_Y} H ${SX[0]}` }); sv.append(progress)
+  const rail = svg('path', { class: 'hair2' }); sv.append(rail)
+  const progress = svg('path', { class: 'trk-progress' }); sv.append(progress)
   const pending = svg('path', { class: 'trk-pending', d: '' }); sv.append(pending)
-  // the gate: a vertical label in the gap between the regions, dashed line below the rail
-  const gateLabel = at(h('div', { class: 'trk-gatelabel' }, 'batch crosses here'), GATE, 10); hero.append(gateLabel)
-  const gate = svg('path', { class: 'hair2 dash trk-gate', d: `M ${GATE} ${RAIL_Y + 10} V ${HERO_H - 16}` }); sv.append(gate)
+  // the gate: a label in the gap between the regions, dashed line off the rail
+  const gateLabel = h('div', { class: 'trk-gatelabel' }, 'batch crosses here'); hero.append(gateLabel)
+  const gate = svg('path', { class: 'hair2 dash trk-gate' }); sv.append(gate)
   // the challenge window: a fill bar on the rail between Claimed and Final
-  const win = at(h('div', { class: 'trk-window' }, [h('i')]), SX[3] + 24, RAIL_Y - 4, SX[4] - SX[3] - 48); hero.append(win)
+  const win = h('div', { class: 'trk-window' }, [h('i')]); hero.append(win)
   const winFill = win.firstElementChild as HTMLElement
-  const winLabel = at(h('div', { class: 'trk-wlabel' }), (SX[3] + SX[4]) / 2, RAIL_Y - 28); hero.append(winLabel)
+  const winLabel = h('div', { class: 'trk-wlabel' }); hero.append(winLabel)
   win.style.opacity = '0'; winLabel.style.opacity = '0'
   const stations = STAGES.map((st, i) => {
-    const g = at(h('div', { class: 'trk-station ' + st.side }), SX[i], RAIL_Y, 0, 0)
+    const g = h('div', { class: 'trk-station ' + st.side })
     const node = h('div', { class: 'node', tabindex: '0', role: 'img', 'aria-label': st.t }, String(i + 1))
     g.append(node, h('div', { class: 'name' }, st.t), h('div', { class: 'when' }, ''), h('div', { class: 'desc' }, ('short' in st ? st.short : st.d) as string))
     tooltip(node, () => `<b>${st.t}</b><br>${st.d}`)
     hero.append(g); return g
   })
-  const ring = at(h('div', { class: 'trk-ring' }), SX[0], RAIL_Y); hero.append(ring)
-  const packet = at(h('div', { class: 'trk-packet' }), SX[0], RAIL_Y); hero.append(packet)
+  const ring = h('div', { class: 'trk-ring' }); hero.append(ring)
+  const packet = h('div', { class: 'trk-packet' }); hero.append(packet)
   ring.style.opacity = '0'; packet.style.opacity = '0'
   const regions = Array.from(hero.querySelectorAll('.trk-region')) as HTMLElement[]
+
+  let g = geom()
+  const pt = (c: number) => g.vert ? `${g.x0} ${c}` : `${c} ${g.y0}`
+  const place = (n: HTMLElement, c: number) => { n.style.left = (g.vert ? g.x0 : c) + 'px'; n.style.top = (g.vert ? c : g.y0) + 'px' }
+  /** Lay the hero out for the current mode. Everything on the rail is placed from `g`. */
+  function layout() {
+    g = geom(); const { c, x0, y0, gate: gc } = g
+    hero.classList.toggle('vert', g.vert); win.classList.toggle('vert', g.vert)
+    hero.style.setProperty('--fh', g.h + 'px'); hero.style.setProperty('--tw', (g.w - x0 - 48) + 'px')
+    sv.setAttribute('viewBox', `0 0 ${g.w} ${g.h}`)
+    rail.setAttribute('d', `M ${pt(c[0])} L ${pt(c[4])}`)
+    if (g.vert) {
+      at(regions[0], 0, 0, g.w, gc - 16); at(regions[1], 0, gc + 16, g.w, g.h - gc - 16)
+      gateLabel.style.left = ''; gateLabel.style.right = '12px'; gateLabel.style.top = (gc + 4) + 'px'
+      gate.setAttribute('d', `M ${x0 + 10} ${gc} H ${g.w - 16}`)
+      at(win, x0 - 4, c[3] + 24, 8, c[4] - c[3] - 48)
+      at(winLabel, x0 + 36, c[3] + 82)
+    } else {
+      at(regions[0], 0, 0, gc - 24, g.h); at(regions[1], gc + 24, 0, g.w - gc - 24, g.h)
+      gateLabel.style.right = ''; at(gateLabel, gc, 10)
+      gate.setAttribute('d', `M ${gc} ${y0 + 10} V ${g.h - 16}`)
+      at(win, c[3] + 24, y0 - 4, c[4] - c[3] - 48, 8)
+      at(winLabel, (c[3] + c[4]) / 2, y0 - 28)
+    }
+    stations.forEach((st, i) => place(st, c[i]))
+    gsap.set(winFill, { clearProps: 'width,height' })
+    progress.setAttribute('d', `M ${pt(c[0])} L ${pt(c[0])}`); pending.setAttribute('d', '')
+    place(ring, c[0]); place(packet, c[0])
+  }
+  layout()
 
   // below the hero: the transaction card, explorer links, a legend, and how the estimates are made
   const facts = new Facts(el, 560)
@@ -146,32 +186,33 @@ export function trackTab() {
     if (r.claim && !r.claim.confirmedTime && r.claim.createdTime) {
       const frac = Math.min(1, (n - r.claim.createdTime) / Math.max(1, r.cadence.period))
       winLabel.textContent = `${Math.round(r.cadence.period / 3600)} h window · ${Math.round(frac * 100)}% elapsed`
-      gsap.to(winFill, { width: `${frac * 100}%`, duration: .8, ease: 'power2.out' })
+      gsap.to(winFill, g.vert ? { height: `${frac * 100}%`, duration: .8, ease: 'power2.out' } : { width: `${frac * 100}%`, duration: .8, ease: 'power2.out' })
       gsap.to([win, winLabel], { opacity: 1, duration: .3 })
     } else if (r.claim?.confirmedTime) {
       winLabel.textContent = `${Math.round(r.cadence.period / 3600)} h window · passed`
-      gsap.set(winFill, { width: '100%' }); gsap.to([win, winLabel], { opacity: 1, duration: .3 })
+      gsap.set(winFill, g.vert ? { height: '100%' } : { width: '100%' }); gsap.to([win, winLabel], { opacity: 1, duration: .3 })
     } else { gsap.to([win, winLabel], { opacity: 0, duration: .3 }) }
 
     // the rail: solid to the reached station, marching dashes to the next one (the window bar covers Claimed to Final)
-    const tx = SX[reached - 1]
-    pending.setAttribute('d', reached < 4 ? `M ${tx} ${RAIL_Y} H ${SX[reached]}` : '')
+    const C = g.c
+    const tx = C[reached - 1]
+    pending.setAttribute('d', reached < 4 ? `M ${pt(tx)} L ${pt(C[reached])}` : '')
     regions[0].classList.toggle('focus', reached <= 2); regions[1].classList.toggle('focus', reached >= 3)
     if (reached !== reachedShown) {
-      const from = reachedShown < 0 ? SX[0] : SX[Math.max(0, reachedShown - 1)]
-      const crossing = from < GATE && tx > GATE
+      const from = reachedShown < 0 ? C[0] : C[Math.max(0, reachedShown - 1)]
+      const crossing = from < g.gate && tx > g.gate
       const dur = reachedShown < 0 ? Math.min(1.4, .4 + reached * .25) : .7
-      progress.setAttribute('d', `M ${SX[0]} ${RAIL_Y} H ${from}`)
+      progress.setAttribute('d', `M ${pt(C[0])} L ${pt(from)}`)
       const o = { x: from }
       gsap.set(packet, { opacity: 1, scale: 1 })
-      gsap.to(o, { x: tx, duration: dur, ease: 'power2.inOut', onUpdate: () => { progress.setAttribute('d', `M ${SX[0]} ${RAIL_Y} H ${o.x}`); packet.style.left = o.x + 'px' } })
+      gsap.to(o, { x: tx, duration: dur, ease: 'power2.inOut', onUpdate: () => { progress.setAttribute('d', `M ${pt(C[0])} L ${pt(o.x)}`); place(packet, o.x) } })
       gsap.fromTo(packet, { opacity: 1, scale: 1 }, { opacity: 0, scale: .4, duration: .25, delay: dur, ease: 'power2.in' })
-      gsap.to(ring, { left: tx, opacity: 1, duration: dur, ease: 'power2.inOut' })
+      gsap.to(ring, { ...(g.vert ? { top: tx } : { left: tx }), opacity: 1, duration: dur, ease: 'power2.inOut' })
       if (crossing) gsap.fromTo(gate, { strokeWidth: 1, opacity: 1 }, { strokeWidth: 6, opacity: 0, duration: .6, delay: dur * .5, ease: 'power2.out', onComplete: () => { gate.style.strokeWidth = ''; gate.style.opacity = '' } })
       // stations pop as the packet passes them; the ones ahead fade in hollow
       const first = Math.max(0, reachedShown)
       for (let i = first; i < reached; i++) {
-        const t = from >= tx ? 0 : dur * (SX[i] - from) / (tx - from)
+        const t = from >= tx ? 0 : dur * (C[i] - from) / (tx - from)
         gsap.fromTo(stations[i].querySelector('.node'), { scale: .5 }, { scale: 1, duration: .4, delay: Math.max(0, t), ease: 'back.out(3)' })
         gsap.fromTo(stations[i].querySelector('.when'), { opacity: 0, y: 4 }, { opacity: 1, y: 0, duration: .3, delay: Math.max(0, t) + .1 })
       }
@@ -215,9 +256,9 @@ export function trackTab() {
     headline.innerHTML = 'Paste a hash to see where it is.'
     stations.forEach((g) => { g.classList.remove('done', 'here', 'next'); (g.querySelector('.when') as HTMLElement).textContent = '' })
     regions.forEach((rg) => rg.classList.remove('focus'))
-    progress.setAttribute('d', `M ${SX[0]} ${RAIL_Y} H ${SX[0]}`); pending.setAttribute('d', '')
+    progress.setAttribute('d', `M ${pt(g.c[0])} L ${pt(g.c[0])}`); pending.setAttribute('d', '')
     gsap.to([ring, packet, win, winLabel, legend, live], { opacity: 0, duration: .25, overwrite: true })
-    gsap.set(winFill, { width: 0 })
+    gsap.set(winFill, { clearProps: 'width,height' })
     facts.set([]); links.innerHTML = ''; note.textContent = ''
   }
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') void lookup(input.value); if (e.key === 'Escape') clear(true) })
@@ -227,6 +268,8 @@ export function trackTab() {
   input.addEventListener('input', () => { if (!input.value.trim() && current) clear(true) })
   sample.addEventListener('click', async () => { headline.textContent = 'Fetching a transaction from the newest batch…'; const r = await fetchSampleTx(state.net); if (r.hash) void lookup(r.hash); else headline.textContent = 'No batched block with transactions yet.' })
   state.onNet.on(() => { clear(true); if (bootTx) { const t = bootTx; bootTx = ''; void lookup(t) } })
+  // a new width or mode: re-lay the rail and replay the journey to where it was
+  view.onChange.on(() => { layout(); if (last && current) { reachedShown = -1; render(last) } })
   return {
     el,
     onShow: () => {

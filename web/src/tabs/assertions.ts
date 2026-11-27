@@ -1,5 +1,6 @@
 import gsap from 'gsap'
 import { h, at } from '../dom'
+import { scale } from '../view'
 import { state, selectAssertion } from '../state'
 import { copyBtn, link, tooltip } from '../ui'
 import { titleRow, Facts, Inspector, ikv, ROW } from '../layout'
@@ -73,7 +74,7 @@ export function assertionsTab() {
       } else if (t.parentElement !== grid) {
         // FLIP: keep the tile on screen while it slides to its new zone
         const r0 = t.getBoundingClientRect(); grid.append(t); const r1 = t.getBoundingClientRect()
-        const deck = document.getElementById('deck')!.getBoundingClientRect(); const sc = deck.width / 1920
+        const sc = scale()
         gsap.fromTo(t, { x: (r0.left - r1.left) / sc, y: (r0.top - r1.top) / sc }, { x: 0, y: 0, duration: .7, ease: 'power3.inOut' })
         gsap.fromTo(t, { boxShadow: '0 0 0 6px rgba(52,183,221,.6)' }, { boxShadow: '0 0 0 0 rgba(52,183,221,0)', duration: 1.2, ease: 'power2.out' })
       }

@@ -5,6 +5,7 @@ import { Facts, ROW } from '../layout'
 import { Lanes } from '../stage/lanes'
 import { BridgePanel } from '../stage/bridge'
 import { fmtAge, fmtAgeShort } from '../api'
+import { view } from '../view'
 
 /** Live: two lanes, bridge rails, four facts. Everything else lives on its own tab. */
 export function liveTab(openTab: (id: string) => void) {
@@ -51,6 +52,8 @@ export function liveTab(openTab: (id: string) => void) {
   state.onDeposit.on((m) => bridge.deposit(m))
   state.onWithdrawal.on((w) => bridge.withdrawal(w))
   state.onNet.on(() => { seeded = false; lanes.markers.innerHTML = '' })
+  // a new width or mode: the lanes and the bridge panel re-lay themselves out and the next snapshot reseeds the markers
+  view.onChange.on(() => { lanes.layout(); bridge.layout(); seeded = false })
   setInterval(() => { const last = state.snapshot?.batches.at(-1); if (last) lanes.openAge.textContent = `last batch #${last.seq} · ${fmtAge(Math.floor(Date.now() / 1000) - last.l1Time)} ago` }, 1000)
   void at; void G
   return { el, lanes }

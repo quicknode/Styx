@@ -1,21 +1,27 @@
 import gsap from 'gsap'
 import { h } from './dom'
+import { scale } from './view'
 
 let tip: HTMLElement | null = null
-/** One shared tooltip, positioned in deck coordinates. */
+/** Where a pointer event lands in the stage's own (design) coordinates. */
+export function stagePoint(e: { clientX: number; clientY: number }) {
+  const stage = document.getElementById('stage')!
+  const r = stage.getBoundingClientRect(); const sc = scale()
+  return { stage, x: (e.clientX - r.left) / sc, y: (e.clientY - r.top) / sc, w: r.width / sc }
+}
+/** One shared tooltip, positioned in stage coordinates. */
 export function tooltip(target: HTMLElement | SVGElement, html: () => string) {
-  const deck = document.getElementById('deck')!
   const show = (e: MouseEvent) => {
-    if (!tip) { tip = h('div', { class: 'tip' }); deck.append(tip) }
+    const { stage } = stagePoint(e)
+    if (!tip) { tip = h('div', { class: 'tip' }); stage.append(tip) }
     tip.innerHTML = html()
     move(e)
     gsap.killTweensOf(tip); gsap.to(tip, { opacity: 1, duration: .15 })
   }
   const move = (e: MouseEvent) => {
     if (!tip) return
-    const r = deck.getBoundingClientRect(); const sc = r.width / 1920
-    const x = (e.clientX - r.left) / sc; const y = (e.clientY - r.top) / sc
-    tip.style.left = Math.min(1920 - 340, x + 16) + 'px'; tip.style.top = Math.max(8, y - 12) + 'px'
+    const { x, y, w } = stagePoint(e)
+    tip.style.left = Math.max(8, Math.min(w - 340, x + 16)) + 'px'; tip.style.top = Math.max(8, y - 12) + 'px'
   }
   const hide = () => { if (tip) gsap.to(tip, { opacity: 0, duration: .15 }) }
   target.addEventListener('mouseenter', show as any); target.addEventListener('mousemove', move as any); target.addEventListener('mouseleave', hide)

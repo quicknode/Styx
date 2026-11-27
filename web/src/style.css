@@ -12,15 +12,23 @@
   --amber: #a8780a; --amber-fill: #f3de9a; --amber-mid: #e2b94a;
   --serif: "Newsreader", Georgia, serif; --sans: "DM Sans", system-ui, sans-serif; --mono: "Geist Mono", ui-monospace, Menlo, monospace;
   --hatch: repeating-linear-gradient(135deg, var(--ink) 0 1px, transparent 1px 5px);
-  --W: 1920px; --H: 1080px;
+  --sc: 1;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { height: 100%; background: #0e0e0d; color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; overflow: hidden; }
-#frame { position: fixed; inset: 0; background: #0e0e0d; overflow: hidden; }
-#deck { position: absolute; left: 50%; top: 50%; width: var(--W); height: var(--H); background: var(--paper); overflow: hidden; transform-origin: center center; transform: translate(-50%,-50%); }
+html, body { min-height: 100%; background: var(--paper); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
 
-#top { position: absolute; top: 0; left: 0; right: 0; height: 96px; padding: 32px 72px 0; display: flex; align-items: center; z-index: 4; }
-#keys { position: absolute; right: 72px; top: 1044px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-30); }
+/* Three bands on a 1920-unit grid (header 97, stage 860 after a 47 gap, footer 76: 1080 in all), each scaled
+   by --sc = min(vw/1920, vh/1080) and centred. The paper fills whatever the aspect ratio leaves over. */
+#frame { position: fixed; inset: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+.band { position: relative; flex: none; width: calc(1920px * var(--sc)); }
+#b-top { height: calc(97px * var(--sc)); z-index: 2; }
+#b-main { height: calc(860px * var(--sc)); margin-top: calc(47px * var(--sc)); }
+#b-foot { height: calc(76px * var(--sc)); }
+.part { position: absolute; left: 0; top: 0; width: 1920px; transform: scale(var(--sc)); transform-origin: 0 0; }
+
+#top { height: 97px; padding: 32px 72px 0; display: flex; align-items: center; z-index: 4; }
+#foot { height: 76px; }
+#keys { position: absolute; right: 72px; top: 36px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-30); }
 #trk-big { position: absolute; height: 48px; box-sizing: border-box; border: 1.25px solid var(--ink); background: var(--paper); font-family: var(--mono); font-size: 16px; color: var(--ink); padding: 0 16px; outline: none; }
 #trk-big:focus { border-color: var(--ely-ink); }
 .hp { cursor: pointer; } .hp:hover .k { color: var(--ink); }
@@ -33,7 +41,7 @@ html, body { height: 100%; background: #0e0e0d; color: var(--ink); font-family: 
 #eyebrow .wave .w2 { stroke: var(--ely); stroke-dasharray: 160; animation: flow 6s linear infinite reverse; opacity: .9; }
 @keyframes flow { to { stroke-dashoffset: -160; } }
 #eyebrow .sub { margin-left: 18px; padding-left: 18px; border-left: 1px solid var(--rule-strong); font-family: var(--mono); font-size: 12.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-50); line-height: 16px; }
-#lockup { position: absolute; left: 72px; top: 1030px; display: flex; align-items: center; gap: 22px; z-index: 4; }
+#lockup { position: absolute; left: 72px; top: 26px; display: flex; align-items: center; gap: 22px; z-index: 4; }
 #lockup img { display: block; } #lockup .lk-ely { height: 24px; } #lockup .lk-qn { height: 19px; } #lockup .lk-x { width: 1px; height: 22px; background: var(--rule-strong); }
 
 /* health strip */
@@ -50,7 +58,8 @@ html, body { height: 100%; background: #0e0e0d; color: var(--ink); font-family: 
 .hp .d { font-family: var(--mono); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-50); margin-top: 8px; white-space: normal; line-height: 1.6; }
 
 /* stage */
-#stage { position: absolute; top: 144px; left: 0; width: var(--W); height: 860px; overflow: visible; }
+#stage { height: 860px; overflow: visible; }
+.lanes-root { position: absolute; }
 .panel { position: absolute; border: 1.25px solid var(--ink); background: transparent; }
 .panel.ely { border-color: var(--ely-ink); } .panel.hl { border-color: var(--hl-ink); } .panel.qn { border-color: var(--qn-ink); }
 .panel.tint.ely { background: rgba(52,183,221,.12); } .panel.tint.hl { background: rgba(151,252,228,.22); } .panel.inset { background: var(--paper-2); border-color: var(--rule-strong); }
@@ -303,7 +312,6 @@ svg text.ink { fill: var(--ink); } svg text.ely { fill: var(--ely-ink); } svg te
 .home-link:hover, .home-link:focus-visible { border-top-color: var(--ink); }
 .home-link .hl-t { display: block; font-family: var(--serif); font-size: 28px; color: var(--ink); }
 .home-link .hl-d { display: block; font-family: var(--mono); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-50); margin-top: 6px; }
-#keys { top: 1040px; }
 
 /* search hero overrides (must come after the base #home-search rule) */
 #home-search { height: 72px; font-size: 22px; padding: 0 24px 0 68px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23141414' stroke-width='1.6'%3E%3Ccircle cx='10.5' cy='10.5' r='7'/%3E%3Cpath d='M16 16l5.5 5.5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: 24px center; box-shadow: 4px 4px 0 var(--paper-3); }
@@ -467,3 +475,97 @@ svg text.ink { fill: var(--ink); } svg text.ely { fill: var(--ely-ink); } svg te
 .cc-name { font-size: 19px; color: var(--ink); }
 .cc-role { margin-top: 2px; font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-50); }
 .cc-addr { margin-top: 12px; display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 15px; letter-spacing: .02em; }
+
+/* ================================================================================================
+   Flow: under 1200 px the same design reflows into one scrolling column at scale 1. Elements placed
+   on the grid drop their coordinates (view.ts) and stack in reading order; heroes redraw into the
+   width they get. Nothing is restyled beyond size and placement.
+   ================================================================================================ */
+.flow #frame { position: relative; inset: auto; overflow: visible; display: block; min-height: 100dvh; }
+.flow .band, .flow #b-top, .flow #b-main, .flow #b-foot { width: auto; height: auto; margin: 0; }
+.flow .part { position: relative; width: auto; height: auto; transform: none; }
+
+/* header: brand and network on one row, the tabs on a scrolling row below */
+.flow #top { height: auto; padding: 14px 16px 0; flex-wrap: wrap; row-gap: 10px; }
+.flow #eyebrow .brand { font-size: 32px; line-height: 32px; }
+.flow #eyebrow .sub { margin-left: 14px; padding-left: 14px; font-size: 11px; }
+.flow #netswitch { margin-left: auto; }
+.flow #tabs { order: 3; width: 100%; height: 44px; margin: 0; gap: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.flow #tabs::-webkit-scrollbar { display: none; }
+.flow #tabs { -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent); }
+.flow .tab { flex: none; height: 44px; padding: 0 12px; font-size: 12px; }
+.flow .tab:first-child { padding-left: 0; }
+.flow .tab .tk { display: none; }
+.flow #toprule { position: relative; order: 4; top: auto; left: auto; right: auto; width: 100%; }
+@media (max-width: 479px) { .flow #eyebrow .sub { display: none; } }
+
+/* stage: tabs become a padded column; placed elements become blocks in reading order */
+.flow #stage { height: auto; }
+.flow .tabpane { position: relative; inset: auto; padding: 22px 16px 32px; }
+.flow .tabpane > [data-at] { position: relative; left: auto; top: auto; right: auto; width: auto; height: var(--fh, auto); margin: 0 0 18px; }
+.flow .tabpane > .controls:empty { display: none; }
+.flow .h2 { font-size: 30px; line-height: 36px; }
+.flow .controls { justify-content: flex-start; flex-wrap: wrap; height: auto; }
+.flow .tabpane > input[data-at], .flow .tabpane > .home-go[data-at] { display: flex; width: 100%; }
+.flow #home-search, .flow #trk-big { position: relative; }
+.flow #home-search { height: 56px; font-size: 16px; padding-left: 56px; background-position: 18px center; }
+.flow .home-go { height: 52px; }
+.flow #trk-big { height: 52px; font-size: 15px; }
+.flow .hair-x { height: 1px; }
+
+/* facts: a 2 × 2 grid; the inspector sits below it instead of over it */
+.flow .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 20px; }
+.flow .facts > [data-at] { position: relative; left: auto; top: auto; width: auto; }
+.flow .fact.empty { display: none; }
+.flow .fact .v { font-size: 30px; line-height: 36px; white-space: normal; }
+.flow .fact .s { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.5; }
+.flow .inspector.closed { display: none; }
+.flow .inspector { padding: 30px 18px 18px; }
+.flow .ibody { position: relative; inset: auto; grid-template-columns: 1fr 1fr; gap: 18px 16px; }
+.flow .ikv .v { font-size: 26px; line-height: 32px; }
+.flow .ikv .v.mono { font-size: 18px; line-height: 32px; }
+
+/* home */
+.flow .verdict { font-size: 36px; line-height: 42px; }
+.flow .statusbar { flex-wrap: wrap; gap: 10px; }
+.flow .sb { height: 40px; padding: 0 14px 0 12px; font-size: 12px; }
+.flow .home-detail { font-size: 17px; line-height: 1.55; }
+.flow .home-search-lbl { font-size: 28px; line-height: 34px; }
+
+/* live: the lanes and the bridge panel lay themselves out (stage/lanes.ts, stage/bridge.ts) */
+.flow .num.big { font-size: 36px; }
+.flow .lanes-root { overflow: hidden; }
+@media (max-width: 479px) { .flow .lanes-root .lbl, .flow .lanes-root .panel-title { font-size: 12.5px; } }
+
+/* batches, bridge, assertions, network */
+.flow .legend, .flow .trk-legend, .flow .trk-links, .flow .feedline { flex-wrap: wrap; justify-content: flex-start; gap: 10px 20px; white-space: normal; }
+.flow .feedline { overflow: visible; align-items: flex-start; }
+.flow .zone { min-height: 120px; margin-bottom: 14px; }
+.flow .zarrow { display: none; }
+.flow .ztitle { font-size: 22px; }
+.flow .opcard { margin-bottom: 14px; padding: 18px 18px 20px; }
+.flow .op-big { font-size: 26px; line-height: 32px; }
+.flow .op-head { flex-wrap: wrap; row-gap: 4px; }
+.flow .op-does { white-space: normal; overflow: visible; }
+.flow .cchips { flex-wrap: wrap; gap: 16px 20px; }
+.flow .cchip { flex: 1 1 42%; }
+.flow .chainline, .flow .foot { white-space: normal; overflow: visible; line-height: 1.5; }
+
+/* track: the rail stands up. Elysium on top, HyperEVM below, stations down the left edge */
+.flow .trk-head { font-size: 26px; line-height: 32px; }
+.flow .trk-live { display: none; }
+.trk-hero.vert .trk-station .name { left: 36px; width: var(--tw); top: -17px; text-align: left; font-size: 22px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trk-hero.vert .trk-station.here .name { font-size: 24px; }
+.trk-hero.vert .trk-station .when { left: 36px; width: var(--tw); top: 14px; text-align: left; }
+.trk-hero.vert .trk-station .desc { left: 36px; width: var(--tw); top: 38px; text-align: left; font-size: 13px; line-height: 1.4; }
+.trk-hero.vert .trk-gatelabel { writing-mode: horizontal-tb; transform: none; }
+.trk-hero.vert .trk-wlabel { transform: none; }
+.trk-window.vert i { width: 100%; height: 0; border-right: 0; border-bottom: 1px solid var(--hl-ink); }
+
+/* footer */
+.flow #foot { display: flex; align-items: center; padding: 8px 16px 28px; }
+.flow #lockup { position: static; }
+.flow #keys { display: none; }
+
+/* no hover, no tooltips: a tap would pin them */
+@media (hover: none) { .tip { display: none !important; } }

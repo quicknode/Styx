@@ -4,6 +4,7 @@ import { state } from '../state'
 import { chip, link, tooltip } from '../ui'
 import { titleRow, hero, Facts, ROW } from '../layout'
 import { fmtAge, fmtTime, short, type BridgeMsg, type Withdrawal } from '../api'
+import { view, flowWidth } from '../view'
 
 type Kind = 'hype' | 'retryable' | 'other' | 'withdrawals'
 const KL: Record<Kind, string> = { hype: 'HYPE deposits', retryable: 'token deposits', other: 'messages', withdrawals: 'withdrawals' }
@@ -32,32 +33,34 @@ export function bridgeTab() {
   w24.addEventListener('click', () => { windowMin = 1440; for (const c of [w60, w180]) { c.classList.remove('on'); c.setAttribute('aria-pressed', 'false') } w24.classList.add('on'); w24.setAttribute('aria-pressed', 'true'); draw(true) })
   controls.append(w60, w180, w24)
 
-  const CH = ROW.heroH; const CW = 1776
-  const chart = hero(el, CH); chart.setAttribute('role', 'img'); chart.setAttribute('aria-label', 'Bridge crossings per minute')
-  const axis = layer(CW, CH); chart.append(axis)
+  // the chart draws into whatever size it is given: 1776×420 on the grid, the column width × 300 in flow
+  const chart = hero(el, ROW.heroH); chart.setAttribute('role', 'img'); chart.setAttribute('aria-label', 'Bridge crossings per minute'); chart.style.setProperty('--fh', '300px')
+  const axis = layer(1776, ROW.heroH); chart.append(axis)
+  const size = () => ({ CW: view.flow ? flowWidth() : 1776, CH: view.flow ? 300 : ROW.heroH })
   const bars = h('div', { style: 'position:absolute;inset:0' }); chart.append(bars)
   const guide = h('div', { class: 'chart-guide' }); chart.append(guide)
-  chart.addEventListener('mousemove', (e) => { const r = chart.getBoundingClientRect(); const sc = r.width / CW; guide.style.left = Math.round((e.clientX - r.left) / sc) + 'px'; guide.style.opacity = '1' })
+  chart.addEventListener('mousemove', (e) => { const r = chart.getBoundingClientRect(); const sc = r.width / size().CW; guide.style.left = Math.round((e.clientX - r.left) / sc) + 'px'; guide.style.opacity = '1' })
   chart.addEventListener('mouseleave', () => { guide.style.opacity = '0' })
   const prevH = new Map<string, number>()
   const facts = new Facts(el)
-  const feed = at(h('div', { class: 'feedline', 'aria-live': 'polite' }), 72, ROW.facts + 124, CW); el.append(feed)
+  const feed = at(h('div', { class: 'feedline', 'aria-live': 'polite' }), 72, ROW.facts + 124, 1776); el.append(feed)
   const recent: { kind: Kind; t: number; tx: string }[] = []
 
   let sig = ''
   function draw(force = false) {
     const s = state.snapshot; if (!s) return
+    const { CW, CH } = size()
     const raw = s.histogram.slice(-windowMin)
     // 24 h view buckets by 15 minutes so bars stay readable
     const B = windowMin >= 1440 ? 15 : 1
     const hist = B === 1 ? raw : raw.reduce<typeof raw>((acc, m, i) => { if (i % B === 0) acc.push({ ...m }); else { const t = acc[acc.length - 1]; t.hype += m.hype; t.retryable += m.retryable; t.other += m.other; t.withdrawals += m.withdrawals } return acc }, [])
     const kinds = (Object.keys(on) as Kind[]).filter((k) => on[k])
-    const nsig = `${windowMin}:${kinds.join('')}:${hist.map((m) => m.hype + m.retryable + m.other + m.withdrawals).join(',')}`
+    const nsig = `${windowMin}:${kinds.join('')}:${CW}:${hist.map((m) => m.hype + m.retryable + m.other + m.withdrawals).join(',')}`
     if (!force && nsig === sig) { drawFeed(); return }
     const animate = force || !sig || sig.split(':')[0] !== String(windowMin) || sig.split(':')[1] !== kinds.join('')
     sig = nsig
     const max = Math.max(1, ...hist.map((m) => kinds.reduce((a, k) => a + m[k], 0)))
-    bars.innerHTML = ''; axis.innerHTML = ''
+    bars.innerHTML = ''; axis.innerHTML = ''; axis.setAttribute('viewBox', `0 0 ${CW} ${CH}`)
     axis.append(svg('path', { class: 'hair2', d: `M 0 ${CH - 28} H ${CW}` }))
     ;[0.5, 1].forEach((f) => { const y = CH - 28 - (CH - 60) * f; axis.append(svg('path', { class: 'hair', d: `M 0 ${y} H ${CW}` })); axis.append(txt(0, y - 6, Math.round(max * f).toLocaleString('en-US') + (B === 1 ? ' / min' : ' / 15 min'))) })
     // time markers: a tick and clock time every 10 min (60 min), 30 min (3 h), or 4 h (24 h)
@@ -124,6 +127,7 @@ export function bridgeTab() {
     recent.sort((a, b) => b.t - a.t)
   }
   state.onSnapshot.on((s) => { seed(s); if (el.style.display !== 'none') draw() })
+  view.onChange.on(() => { if (el.style.display !== 'none') draw(true) })
   state.onDeposit.on((m: BridgeMsg) => { recent.unshift({ kind: m.kind === 12 ? 'hype' : m.kind === 9 ? 'retryable' : 'other', t: m.l1Time, tx: m.txHash }); if (recent.length > 60) recent.pop(); if (el.style.display !== 'none') drawFeed() })
   state.onWithdrawal.on((w: Withdrawal) => { recent.unshift({ kind: 'withdrawals', t: w.l1Time, tx: w.txHash }); if (el.style.display !== 'none') drawFeed() })
   state.onNet.on(() => { recent.length = 0; sig = ''; feedSig = ''; bars.innerHTML = ''; feed.innerHTML = '' })
