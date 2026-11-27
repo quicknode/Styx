@@ -2,7 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#f5f2eb" />
     <title>Styx · Elysium Settlement Monitor</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -11,8 +12,8 @@
   </head>
   <body>
     <div id="frame">
-      <div id="deck">
-        <div id="top">
+      <div class="band" id="b-top">
+        <div class="part" id="top">
           <div id="eyebrow"><b class="brand">Styx<svg class="wave" viewBox="0 0 96 10" aria-hidden="true"><path class="w1" d="M0 5 Q8 1 16 5 T32 5 T48 5 T64 5 T80 5 T96 5"/><path class="w2" d="M0 5 Q8 9 16 5 T32 5 T48 5 T64 5 T80 5 T96 5"/></svg></b><span class="sub">Elysium Settlement Monitor</span><span id="netname" class="sr">mainnet</span></div>
           <div id="tabs"></div>
           <div id="netswitch">
@@ -20,15 +21,21 @@
             <button id="netbtn" type="button" aria-haspopup="listbox" aria-expanded="false" aria-label="Network">Mainnet<span class="caret" aria-hidden="true"></span></button>
             <ul id="netmenu" role="listbox" hidden><li role="option" data-net="mainnet" aria-selected="true">Mainnet</li><li role="option" data-net="testnet" aria-selected="false">Testnet</li></ul>
           </div>
+          <div id="toprule"></div>
         </div>
-        <div id="toprule"></div>
-        <div id="stage"></div>
-        <div id="lockup">
-          <img class="lk-ely" src="/brand/elysium-wordmark-dark.svg" alt="Elysium" />
-          <span class="lk-x"></span>
-          <img class="lk-qn" src="/brand/qn-wordmark-dark.svg" alt="Quicknode" />
+      </div>
+      <div class="band" id="b-main">
+        <div class="part" id="stage"></div>
+      </div>
+      <div class="band" id="b-foot">
+        <div class="part" id="foot">
+          <div id="lockup">
+            <img class="lk-ely" src="/brand/elysium-wordmark-dark.svg" alt="Elysium" />
+            <span class="lk-x"></span>
+            <img class="lk-qn" src="/brand/qn-wordmark-dark.svg" alt="Quicknode" />
+          </div>
+          <div id="keys" aria-hidden="true">1–7 tabs · / search · p pause</div>
         </div>
-        <div id="keys" aria-hidden="true">1–7 tabs · / search · p pause</div>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>

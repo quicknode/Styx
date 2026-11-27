@@ -43,7 +43,7 @@ Two processes, no database.
 
 The collector (`server/`) is a Node process in TypeScript. It subscribes to Elysium heads over WebSocket, polls the HyperEVM head once a second, fetches rollup logs as new blocks arrive, and keeps everything in memory. Every two seconds it publishes a snapshot. Every event is also pushed the moment it is seen. Both go out over Server Sent Events at `/api/:net/events`.
 
-The UI (`web/`) is Vite, TypeScript and GSAP, no framework. It renders on a fixed 1920 by 1080 stage that scales to the window, so every tab is laid out on the same 12 column grid. Animation runs on one GSAP ticker with transform only motion. We measured it at 59 to 60 fps with no long tasks, and we check for accidental redraws with a mutation observer, because a number that blinks every two seconds for no reason is the fastest way to make a dashboard feel broken.
+The UI (`web/`) is Vite, TypeScript and GSAP, no framework. Every tab is laid out on the same 12 column, 1920 unit grid. On screens 1200 px and wider the header, stage and footer are three bands scaled to the window and centred on paper that fills the viewport, so the layout is identical at any aspect ratio. Below 1200 px the same tabs reflow into one scrolling column: placed elements drop their coordinates and stack in reading order, the charts draw into the width they get, and the Track rail stands up with Elysium on top and HyperEVM below. Animation runs on one GSAP ticker with transform only motion. We measured it at 59 to 60 fps with no long tasks, and we check for accidental redraws with a mutation observer, because a number that blinks every two seconds for no reason is the fastest way to make a dashboard feel broken.
 
 ### API
 

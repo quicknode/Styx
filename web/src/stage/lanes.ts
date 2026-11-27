@@ -2,6 +2,8 @@ import gsap from 'gsap'
 import { at, h, layer, G } from '../dom'
 import type { Assertion, Batch, Head } from '../api'
 import { fmtAge } from '../api'
+import { stagePoint } from '../ui'
+import { view, flowWidth } from '../view'
 
 gsap.config({ force3D: true })
 
@@ -17,10 +19,11 @@ export class Lanes {
   elyTitle!: HTMLElement; l1Title!: HTMLElement; l1Times: number[] = []
   elyNum: HTMLElement; l1Num: HTMLElement; openSeq: HTMLElement; openBlocks: HTMLElement; openAge: HTMLElement
   asrtRow: HTMLElement
-  // geometry (stage coords)
+  // geometry (stage coords), set by layout(): the grid on wide screens, the column width in flow
   X = G.x(1); W = G.w(12)
   EY = 120; L1Y = 390
   TRACK_L = G.x(1) + 32; TRACK_R = G.x(1) + G.w(12) - 420
+  elyPanel: HTMLElement; l1Panel: HTMLElement; elyLane: HTMLElement; l1Lane: HTMLElement
   // moving groups
   elyGroup: HTMLElement; l1Group: HTMLElement
   elyT0 = performance.now(); l1T0 = performance.now()
@@ -31,38 +34,34 @@ export class Lanes {
   unbatchedBlocks = 0; unbatchedSeconds = 0
 
   constructor(stage: HTMLElement) {
-    this.root = h('div', { style: 'position:absolute;inset:0' }); stage.append(this.root)
+    this.root = at(h('div', { class: 'lanes-root' }), 0, 0, 1920, 480); stage.append(this.root)
     this.svg = layer(); this.root.append(this.svg)
 
     this.elyTitle = h('span', { class: 'panel-title ely' }, 'Elysium · L2 blocks')
     this.l1Title = h('span', { class: 'panel-title hl' }, 'HyperEVM · settlement')
-    const elyPanel = at(h('div', { class: 'panel tint ely' }, [this.elyTitle]), this.X, 40, this.W, 160)
-    const l1Panel = at(h('div', { class: 'panel tint hl' }, [this.l1Title]), this.X, 310, this.W, 160)
-    this.root.append(elyPanel, l1Panel)
+    this.elyPanel = h('div', { class: 'panel tint ely' }, [this.elyTitle])
+    this.l1Panel = h('div', { class: 'panel tint hl' }, [this.l1Title])
+    this.root.append(this.elyPanel, this.l1Panel)
 
-    const laneW = this.TRACK_R - this.TRACK_L
-    const mkLane = (y: number) => {
-      const lane = at(h('div', { class: 'lane', style: 'overflow:hidden' }), this.TRACK_L, y - 40, laneW, 80)
+    const mkLane = () => {
+      const lane = h('div', { class: 'lane', style: 'overflow:hidden' })
       lane.append(h('div', { class: 'track' }))
       const grp = h('div', { class: 'grp' }); lane.append(grp)
-      this.root.append(lane); return grp
+      this.root.append(lane); return { lane, grp }
     }
-    this.elyGroup = mkLane(this.EY); this.l1Group = mkLane(this.L1Y)
-    this.markers = at(h('div', { style: 'position:absolute;inset:0;pointer-events:none' }), 0, 0); this.root.append(this.markers)
+    const a = mkLane(); const b = mkLane(); this.elyLane = a.lane; this.elyGroup = a.grp; this.l1Lane = b.lane; this.l1Group = b.grp
+    this.markers = h('div', { style: 'position:absolute;inset:0;pointer-events:none' }); this.root.append(this.markers)
 
-    // right column, aligned on one baseline grid
-    const RX = this.TRACK_R + 40
-    this.elyNum = at(h('div', { class: 'num ely big' }, '—'), RX, this.EY - 46)
-    this.openSeq = at(h('div', { class: 'lbl ely' }, 'latest block'), RX, this.EY + 10)
-    this.openBlocks = at(h('div', { class: 'lbl' }, ''), RX, this.EY + 34)
-    this.l1Num = at(h('div', { class: 'num hl big' }, '—'), RX, this.L1Y - 46)
-    this.openAge = at(h('div', { class: 'lbl hl' }, ''), RX, this.L1Y + 10)
+    this.elyNum = h('div', { class: 'num ely big' }, '—')
+    this.openSeq = h('div', { class: 'lbl ely' }, 'latest block')
+    this.openBlocks = h('div', { class: 'lbl' }, '')
+    this.l1Num = h('div', { class: 'num hl big' }, '—')
+    this.openAge = h('div', { class: 'lbl hl' }, '')
     this.root.append(this.elyNum, this.openSeq, this.openBlocks, this.l1Num, this.openAge)
-
-    // connector
+    this.layout()
 
     this.asrtRow = h('div')
-    gsap.from([elyPanel, l1Panel], { opacity: 0, y: 14, duration: .9, stagger: .15, ease: 'power3.out' })
+    gsap.from([this.elyPanel, this.l1Panel], { opacity: 0, y: 14, duration: .9, stagger: .15, ease: 'power3.out' })
 
     gsap.ticker.add(this.tick)
     for (const grp of [this.elyGroup, this.l1Group]) {
@@ -75,12 +74,37 @@ export class Lanes {
       grp.parentElement!.addEventListener('mouseleave', () => this.hideTip())
     }
   }
+  /**
+   * Wide: both panels span the grid, lanes on the left, the big number and its labels in a right column.
+   * Flow: panels span the column, the number and labels sit at the top of each panel, the lane runs below them.
+   * The moving groups restart, so the Live tab reseeds the markers from the next snapshot.
+   */
+  layout() {
+    const flow = view.flow
+    let py: [number, number, number, number]; let RX: number; let ys: number[]
+    if (flow) {
+      const w = flowWidth()
+      this.X = 0; this.W = w; this.TRACK_L = 16; this.TRACK_R = w - 16
+      py = [16, 190, 230, 220]; this.EY = 16 + 130; this.L1Y = 230 + 160
+      RX = 20; ys = [16 + 22, 16 + 74, 16 + 96, 230 + 22, 230 + 74]
+      this.root.style.setProperty('--fh', '470px')
+    } else {
+      this.X = G.x(1); this.W = G.w(12); this.TRACK_L = this.X + 32; this.TRACK_R = this.X + this.W - 420
+      py = [40, 160, 310, 160]; this.EY = 120; this.L1Y = 390
+      RX = this.TRACK_R + 40; ys = [this.EY - 46, this.EY + 10, this.EY + 34, this.L1Y - 46, this.L1Y + 10]
+    }
+    at(this.elyPanel, this.X, py[0], this.W, py[1]); at(this.l1Panel, this.X, py[2], this.W, py[3])
+    const laneW = this.TRACK_R - this.TRACK_L
+    at(this.elyLane, this.TRACK_L, this.EY - 40, laneW, 80); at(this.l1Lane, this.TRACK_L, this.L1Y - 40, laneW, 80)
+    at(this.elyNum, RX, ys[0]); at(this.openSeq, RX, ys[1]); at(this.openBlocks, RX, ys[2]); at(this.l1Num, RX, ys[3]); at(this.openAge, RX, ys[4])
+    this.elyGroup.innerHTML = ''; this.l1Group.innerHTML = ''; this.markers.innerHTML = ''
+    this.elyT0 = this.l1T0 = performance.now(); this.lastTickAt = 0
+  }
   private tip?: HTMLElement
   private showTip(e: MouseEvent, html: string) {
-    const deck = document.getElementById('deck')!
-    if (!this.tip) { this.tip = h('div', { class: 'tip' }); deck.append(this.tip) }
-    const r = deck.getBoundingClientRect(); const sc = r.width / 1920
-    this.tip.innerHTML = html; this.tip.style.left = Math.min(1920 - 340, (e.clientX - r.left) / sc + 16) + 'px'; this.tip.style.top = ((e.clientY - r.top) / sc - 12) + 'px'; this.tip.style.opacity = '1'
+    const { stage, x, y, w } = stagePoint(e)
+    if (!this.tip) { this.tip = h('div', { class: 'tip' }); stage.append(this.tip) }
+    this.tip.innerHTML = html; this.tip.style.left = Math.max(8, Math.min(w - 340, x + 16)) + 'px'; this.tip.style.top = (y - 12) + 'px'; this.tip.style.opacity = '1'
   }
   private hideTip() { if (this.tip) this.tip.style.opacity = '0' }
 
@@ -136,14 +160,15 @@ export class Lanes {
     this.l1Group.append(b)
     gsap.fromTo(b, { scale: 1.8, opacity: 0 }, { scale: 1, opacity: 1, duration: .5, ease: 'back.out(2.5)' })
   }
-  private lastNums = new Map<HTMLElement, number>()
-  /** Roll a number in: tween the value so digits flow instead of jumping. */
+  private rolling = new Map<HTMLElement, { tw?: gsap.core.Tween; v: number }>()
+  /** Roll a number in: one tween per element, restarted from the value on screen, so bursts of heads never leave two tweens fighting over the text. */
   private setNum(el: HTMLElement, n: number) {
-    const from = this.lastNums.get(el) ?? n
-    this.lastNums.set(el, n)
-    if (from === n || Math.abs(n - from) > 50) { el.textContent = n.toLocaleString('en-US'); return }
+    const r = this.rolling.get(el) ?? { v: n }; this.rolling.set(el, r)
+    r.tw?.kill(); r.tw = undefined
+    const from = r.v
+    if (from === n || Math.abs(n - from) > 50) { r.v = n; el.textContent = n.toLocaleString('en-US'); return }
     const o = { v: from }
-    gsap.to(o, { v: n, duration: .4, ease: 'power2.out', onUpdate: () => { el.textContent = Math.round(o.v).toLocaleString('en-US') } })
+    r.tw = gsap.to(o, { v: n, duration: .4, ease: 'power2.out', onUpdate: () => { r.v = o.v; el.textContent = Math.round(o.v).toLocaleString('en-US') } })
   }
   setBacklog(blocks: number, seconds: number) { this.unbatchedBlocks = blocks; this.unbatchedSeconds = seconds; this.updateWaiting() }
   private updateWaiting() {

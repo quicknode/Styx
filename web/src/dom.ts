@@ -19,7 +19,13 @@ export function s<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Attrs = {
   for (const c of children) el.append(c)
   return el
 }
+/** Place an element on the 1920-unit grid. The coordinates are kept in data-* so the flow layout can drop and restore them (see view.ts). */
 export function at<T extends HTMLElement>(el: T, x: number, y: number, w?: number, hgt?: number): T {
+  // a data attribute, not a class: tabs reassign className freely. Prefixed `g` because the lanes use data-x for their own positions.
+  el.dataset.at = '1'
+  el.dataset.gx = String(x); el.dataset.gy = String(y)
+  if (w !== undefined) el.dataset.gw = String(w); else delete el.dataset.gw
+  if (hgt !== undefined) el.dataset.gh = String(hgt); else delete el.dataset.gh
   el.style.left = x + 'px'; el.style.top = y + 'px'
   if (w !== undefined) el.style.width = w + 'px'
   if (hgt !== undefined) el.style.height = hgt + 'px'

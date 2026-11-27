@@ -1,5 +1,6 @@
 import gsap from 'gsap'
 import { h, at, G } from './dom'
+import { view } from './view'
 
 /**
  * One layout template for every tab.
@@ -51,7 +52,7 @@ export class Facts {
     })
     for (let i = facts.length; i < 4; i++) { this.items[i].className = 'fact empty'; for (const c of ['.k', '.v', '.s']) (this.items[i].querySelector(c) as HTMLElement).textContent = '' }
   }
-  show(on: boolean) { gsap.to(this.el, { opacity: on ? 1 : 0, y: on ? 0 : 6, duration: .3, ease: 'power2.out', onStart: () => { if (on) { this.el.style.pointerEvents = ''; this.el.style.visibility = 'visible' } }, onComplete: () => { if (!on) { this.el.style.pointerEvents = 'none'; this.el.style.visibility = 'hidden' } } }) }
+  show(on: boolean) { if (view.flow && on) { this.el.style.pointerEvents = ''; this.el.style.visibility = 'visible'; gsap.set(this.el, { opacity: 1, y: 0 }); return } if (view.flow) return; gsap.to(this.el, { opacity: on ? 1 : 0, y: on ? 0 : 6, duration: .3, ease: 'power2.out', onStart: () => { if (on) { this.el.style.pointerEvents = ''; this.el.style.visibility = 'visible' } }, onComplete: () => { if (!on) { this.el.style.pointerEvents = 'none'; this.el.style.visibility = 'hidden' } } }) }
 }
 
 /** The inspector replaces the facts strip after a click. One per tab. */
@@ -67,21 +68,21 @@ export class Inspector {
     close.addEventListener('click', () => this.hide())
     this.body = h('div', { class: 'ibody' })
     this.el.append(this.titleEl, close, this.body)
-    this.el.style.opacity = '0'; this.el.style.pointerEvents = 'none'
+    this.el.style.opacity = '0'; this.el.style.pointerEvents = 'none'; this.el.classList.add('closed')
     root.append(this.el)
     root.addEventListener('keydown', (e) => { if (e.key === 'Escape' && this.open) { this.hide(); e.stopPropagation() } })
   }
   show(title: string, build: (body: HTMLElement) => void) {
     this.titleEl.textContent = title
     this.body.innerHTML = ''; build(this.body)
-    if (!this.open) { this.open = true; this.facts.show(false); this.el.style.pointerEvents = ''; gsap.fromTo(this.el, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .35, delay: .15, ease: 'power2.out' }) }
+    if (!this.open) { this.open = true; this.el.classList.remove('closed'); this.facts.show(false); this.el.style.pointerEvents = ''; gsap.fromTo(this.el, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .35, delay: .15, ease: 'power2.out' }) }
     gsap.fromTo(this.body.children, { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: .35, stagger: .05, ease: 'power2.out' })
   }
   onHide?: () => void
   hide() {
     if (!this.open) return
     this.open = false; this.el.style.pointerEvents = 'none'
-    gsap.to(this.el, { opacity: 0, y: 8, duration: .25 }); this.facts.show(true)
+    gsap.to(this.el, { opacity: 0, y: 8, duration: .25, onComplete: () => { if (!this.open) this.el.classList.add('closed') } }); this.facts.show(true)
     // the clicked tile keeps focus, and a key press would switch it to the focus ring; drop it
     const ae = document.activeElement as HTMLElement | null
     if (ae && this.root.contains(ae) && ae.tagName !== 'INPUT') ae.blur()
