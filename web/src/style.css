@@ -578,11 +578,23 @@ body.flow { overflow-x: hidden; }
 
 /* landscape phones and tablets (flow, 640 px and up): one-row header, four facts across, cards and zones side by side */
 @media (min-width: 640px) {
+  .flow #top { padding: 8px 16px 0; row-gap: 8px; }
+  .flow #eyebrow .brand { font-size: 28px; line-height: 28px; }
   .flow #tabs { order: 0; width: auto; flex: 1 1 auto; margin: 0 16px; }
-  .flow .tabdrop { width: 100%; max-width: 260px; }
-  .flow .tabmenu { max-width: 260px; }
-  .flow #netswitch { margin-left: 0; }
-  .flow #toprule { margin-top: 2px; }
+  .flow .tabdrop { width: 100%; max-width: 200px; height: 36px; padding: 0 12px; font-size: 12px; }
+  .flow .tabmenu { max-width: 200px; top: 42px; }
+  .flow .tabmenu li { padding: 10px 14px; font-size: 12px; }
+  .flow #netswitch { margin-left: 0; height: 36px; }
+  .flow #netbtn { height: 36px; padding: 0 12px; font-size: 12px; }
+  .flow #toprule { margin-top: 0; }
+  /* network tab: a step up so the cards and chips read at desktop-window widths */
+  .flow .chainline, .flow .op-does { font-size: 14px; }
+  .flow .op-role { font-size: 15px; }
+  .flow .op-big { font-size: 30px; line-height: 36px; }
+  .flow .op-small { font-size: 14px; line-height: 22px; }
+  .flow .cc-name { font-size: 21px; }
+  .flow .cc-addr { font-size: 16px; }
+  .flow .foot { font-size: 16px; }
   .flow .facts { grid-template-columns: repeat(4, 1fr); }
   .flow .ibody { grid-template-columns: repeat(4, 1fr); }
   .flow #pane-network, .flow #pane-assertions { display: flex; flex-wrap: wrap; align-items: flex-start; column-gap: 16px; }
