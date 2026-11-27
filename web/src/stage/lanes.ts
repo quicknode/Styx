@@ -160,14 +160,15 @@ export class Lanes {
     this.l1Group.append(b)
     gsap.fromTo(b, { scale: 1.8, opacity: 0 }, { scale: 1, opacity: 1, duration: .5, ease: 'back.out(2.5)' })
   }
-  private lastNums = new Map<HTMLElement, number>()
-  /** Roll a number in: tween the value so digits flow instead of jumping. */
+  private rolling = new Map<HTMLElement, { tw?: gsap.core.Tween; v: number }>()
+  /** Roll a number in: one tween per element, restarted from the value on screen, so bursts of heads never leave two tweens fighting over the text. */
   private setNum(el: HTMLElement, n: number) {
-    const from = this.lastNums.get(el) ?? n
-    this.lastNums.set(el, n)
-    if (from === n || Math.abs(n - from) > 50) { el.textContent = n.toLocaleString('en-US'); return }
+    const r = this.rolling.get(el) ?? { v: n }; this.rolling.set(el, r)
+    r.tw?.kill(); r.tw = undefined
+    const from = r.v
+    if (from === n || Math.abs(n - from) > 50) { r.v = n; el.textContent = n.toLocaleString('en-US'); return }
     const o = { v: from }
-    gsap.to(o, { v: n, duration: .4, ease: 'power2.out', onUpdate: () => { el.textContent = Math.round(o.v).toLocaleString('en-US') } })
+    r.tw = gsap.to(o, { v: n, duration: .4, ease: 'power2.out', onUpdate: () => { r.v = o.v; el.textContent = Math.round(o.v).toLocaleString('en-US') } })
   }
   setBacklog(blocks: number, seconds: number) { this.unbatchedBlocks = blocks; this.unbatchedSeconds = seconds; this.updateWaiting() }
   private updateWaiting() {

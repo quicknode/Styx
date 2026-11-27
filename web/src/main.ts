@@ -17,16 +17,26 @@ import { view, scale, applyMode, FLOW_BELOW } from './view'
  * Wide: three bands scaled by sc = min(vw/1920, vh/1080), centred on paper that fills the viewport.
  * Flow: scale 1, every tab reflows into one scrolling column. Heroes redraw on change.
  */
-let fitTimer = 0
+let fitTimer = 0; let lastW = 0
 function fit() {
   const flow = innerWidth < FLOW_BELOW
   const sc = flow ? 1 : Math.min(innerWidth / 1920, innerHeight / 1080)
-  document.documentElement.style.setProperty('--sc', String(sc))
+  const rs = document.documentElement.style
+  rs.setProperty('--sc', String(sc))
+  // the bands sit on whole pixels: a layer at a fractional offset shimmers when the things inside it move
+  const topH = Math.round(97 * sc), gap = Math.round(47 * sc), mainH = Math.round(860 * sc), footH = Math.round(76 * sc)
+  const slack = Math.max(0, Math.floor((innerHeight - topH - gap - mainH - footH) / 2))
+  rs.setProperty('--x', Math.round((innerWidth - 1920 * sc) / 2) + 'px')
+  rs.setProperty('--top-y', '0px'); rs.setProperty('--main-y', topH + slack + gap + 'px'); rs.setProperty('--foot-y', topH + slack + gap + mainH + slack + 'px')
+  rs.setProperty('--top-h', topH + 'px'); rs.setProperty('--main-h', mainH + 'px'); rs.setProperty('--foot-h', footH + 'px')
   document.body.classList.toggle('flow', flow)
   const flipped = flow !== view.flow
+  // heroes re-lay themselves out only when the mode flips or the column gets wider or narrower.
+  // Phone browsers fire resize for toolbar and keyboard changes too, and those must not reset the lanes.
+  const widened = innerWidth !== lastW; lastW = innerWidth
   view.flow = flow; view.sc = sc
   if (flipped) applyMode()
-  if (flipped || flow) { clearTimeout(fitTimer); fitTimer = window.setTimeout(() => view.onChange.emit(), flipped ? 0 : 120) }
+  if (flipped || (flow && widened)) { clearTimeout(fitTimer); fitTimer = window.setTimeout(() => view.onChange.emit(), flipped ? 0 : 120) }
 }
 addEventListener('resize', fit); fit()
 

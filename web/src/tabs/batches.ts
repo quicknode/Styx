@@ -45,7 +45,7 @@ export function batchesTab() {
     let tick = raw * (span / raw > 40 ? 5 : span / raw > 16 ? 2 : 1)
     if (CW < 1000) { tick = raw * 10; for (const m of [1, 2, 5, 10]) if (span / (raw * m) <= n * 1.5) { tick = raw * m; break } }
     for (let n = Math.ceil(first / tick) * tick; n <= head; n += tick) { const xx = x(n); axis.append(svg('path', { class: 'hair2', d: `M ${xx} ${BASE} V ${BASE + 8}` })); axis.append(txt(xx, BASE + 22, n.toLocaleString('en-US'), '', 'middle')) }
-    axis.append(txt(0, 16, `${list.length} most recent batches · ${span.toLocaleString('en-US')} elysium blocks →`, ''))
+    axis.append(txt(0, 16, CW < 1000 ? `${list.length} batches · ${span.toLocaleString('en-US')} blocks →` : `${list.length} most recent batches · ${span.toLocaleString('en-US')} elysium blocks →`, ''))
     list.forEach((b, i) => {
       const x0 = x(b.l2FirstBlock!), x1 = x(b.l2LastBlock! + 1); const w = Math.max(2, x1 - x0 - 2)
       const seg = at(h('div', { class: 'seg' + (i % 2 ? ' alt' : '') + (b.daMode === 'fulldata' ? ' full' : '') + (b.seq === state.selectedBatch ? ' sel' : ''), role: 'listitem', tabindex: '0', 'aria-label': `Batch ${b.seq}, ${b.l2Blocks} blocks` }), x0, BASE - SEG_H, w, SEG_H)
